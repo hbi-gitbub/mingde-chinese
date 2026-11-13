@@ -133,26 +133,11 @@ body {
   border-bottom: 1px solid var(--border);
 }
 
-/* Uploaded pages: their own group after the built-in games. */
-.nav-uploaded {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding-left: 8px;
-  border-left: 1px solid var(--border);
-}
-
-.nav-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.nav-btn:disabled:hover {
-  border-color: var(--border);
-}
-
-.nav-pending {
-  font-size: 0.85em;
+/* "…" opens the contents table (all games). */
+.nav-more {
+  min-width: 48px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
 }
 
 /* One-line description of the open game. */
@@ -176,6 +161,112 @@ body {
   height: 100%;
   border: 0;
   background: var(--bg);
+}
+
+/* ---------- Contents page (#contents) ---------- */
+
+.contents-view {
+  height: 100%;
+  overflow: auto;
+  padding: 16px;
+}
+
+.contents-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 16px;
+  margin-bottom: 12px;
+}
+
+.contents-head h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.contents-head .hint {
+  flex: 1;
+}
+
+.table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.contents-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.col-title {
+  width: 30%;
+}
+
+.col-desc {
+  width: 50%;
+}
+
+.col-author {
+  width: 20%;
+}
+
+.contents-table th,
+.contents-table td {
+  padding: 8px 10px;
+  text-align: left;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+  border-bottom: 1px solid var(--border);
+}
+
+.contents-table th {
+  background: var(--bg);
+}
+
+.contents-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.contents-table tbody tr:hover {
+  background: var(--bg);
+}
+
+.th-name {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.filter {
+  width: 100%;
+  min-width: 0;
+  padding: 4px 6px;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 400;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.contents-table a {
+  color: var(--accent);
+}
+
+.contents-pending {
+  color: var(--muted);
+}
+
+.contents-empty {
+  margin: 0;
+  padding: 16px;
+  color: var(--muted);
 }
 
 /* ---------- Manage dialog (⚙ 管理) ---------- */
@@ -353,6 +444,7 @@ textarea.field {
 }
 
 .page-row-key,
+.page-row-author,
 .page-row-date {
   color: var(--muted);
   font-size: 0.85rem;
@@ -406,5 +498,39 @@ textarea.field {
   .manage-dialog {
     width: calc(100vw - 16px);
     max-height: calc(100dvh - 16px);
+  }
+
+  .contents-view {
+    padding: 12px 8px;
+  }
+
+  .contents-table {
+    font-size: 0.85rem;
+  }
+
+  .contents-table th,
+  .contents-table td {
+    padding: 6px;
+  }
+
+  /* Header names wrap between words only ("作者 / Author", never "Autho r"). */
+  .contents-table th {
+    overflow-wrap: normal;
+  }
+
+  .th-name {
+    font-size: 0.8rem;
+  }
+
+  .col-title {
+    width: 32%;
+  }
+
+  .col-desc {
+    width: 43%;
+  }
+
+  .col-author {
+    width: 25%;
   }
 }

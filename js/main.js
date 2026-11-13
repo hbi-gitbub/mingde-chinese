@@ -1,8 +1,10 @@
 "use strict";
 
 // Main page: shows one game at a time in the iframe, driven by the URL hash.
-// Built-in games are listed below. Uploaded games come from js/uploaded-pages.js
-// (window.MINGDE_UPLOADED_PAGES) and from "pages-changed" events sent by js/manage.js.
+// The nav holds the built-in games and a "…" button that opens #contents: a table of the
+// uploaded games with a filter drop-down per column. Uploaded games come from
+// js/uploaded-pages.js (window.MINGDE_UPLOADED_PAGES) and from "pages-changed" events sent
+// by js/manage.js.
 (() => {
   const BUILTIN_PAGES = {
     adventure: {
@@ -17,22 +19,38 @@
     },
   };
   const DEFAULT_PAGE = "adventure";
+  const CONTENTS_KEY = "contents";
+  const CONTENTS_META = { title: "目录", description: "" };
   const SITE_TITLE = "明德中文乐园";
   const UPLOAD_DIR = "pages/uploads/";
   const LIST_SCRIPT = "js/uploaded-pages.js";
   const KEY_PATTERN = /^[a-z0-9][a-z0-9-]{0,39}$/;
   const TITLE_MAX = 40;
   const DESC_MAX = 200;
+  const AUTHOR_MAX = 40;
   const PUBLISHING_LABEL = "（发布中…）";
   const PUBLISHING_STATUS = "发布中… / Publishing…";
+  // Columns with a filter drop-down; "all" shows every row, "=<value>" only matching rows.
+  const FILTER_COLUMNS = ["title", "description", "author"];
+  const FILTER_ALL = "all";
+  const OPTION_TEXT_MAX = 30;
 
   const nav = document.querySelector(".shell-nav");
-  const uploadedNav = document.getElementById("nav-uploaded");
   const statusEl = document.getElementById("status");
   const descEl = document.getElementById("page-desc");
+  const contentsView = document.getElementById("contents-view");
+  const contentsBody = document.getElementById("contents-body");
+  const contentsCount = document.getElementById("contents-count");
+  const contentsEmpty = document.getElementById("contents-empty");
+  const filtersClear = document.getElementById("filters-clear");
+  const filterSelects = {};
+  FILTER_COLUMNS.forEach((column) => {
+    filterSelects[column] = contentsView.querySelector(`select[data-filter="${column}"]`);
+  });
   let frame = document.getElementById("content");
 
   let pages = { ...BUILTIN_PAGES };
+  let uploaded = [];
   let publishing = new Set();
   let currentKey = null;
   let gotManagerList = false;
@@ -41,6 +59,10 @@
 
   function hasOwn(obj, key) {
     return Object.prototype.hasOwnProperty.call(obj, key);
+  }
+
+  function cleanText(value, max) {
+    return typeof value === "string" ? value.trim().slice(0, max) : "";
   }
 
   // Keep only well-formed entries; the list is written by the site but is still input.
@@ -52,24 +74,29 @@
       if (!entry || typeof entry !== "object") return;
       const { key, title } = entry;
       if (typeof key !== "string" || !KEY_PATTERN.test(key)) return;
-      if (hasOwn(BUILTIN_PAGES, key) || seen.has(key)) return;
+      if (hasOwn(BUILTIN_PAGES, key) || key === CONTENTS_KEY || seen.has(key)) return;
       if (typeof title !== "string" || !title.trim() || title.length > TITLE_MAX) return;
-      const description =
-        typeof entry.description === "string" ? entry.description.slice(0, DESC_MAX) : "";
       seen.add(key);
-      result.push({ key, title: title.trim(), description });
+      result.push({
+        key,
+        title: title.trim(),
+        description: cleanText(entry.description, DESC_MAX),
+        author: cleanText(entry.author, AUTHOR_MAX),
+      });
     });
     return result;
   }
 
   function pageFromHash() {
     const key = window.location.hash.slice(1);
-    return hasOwn(pages, key) ? key : null;
+    return key === CONTENTS_KEY || hasOwn(pages, key) ? key : null;
   }
 
+  // Built-in games light up their own button; the contents page and uploaded games light up "…".
   function markActive() {
+    const active = hasOwn(BUILTIN_PAGES, currentKey) ? currentKey : CONTENTS_KEY;
     nav.querySelectorAll(".nav-btn[data-page]").forEach((btn) => {
-      if (btn.dataset.page === currentKey) {
+      if (btn.dataset.page === active) {
         btn.setAttribute("aria-current", "page");
       } else {
         btn.removeAttribute("aria-current");
@@ -77,24 +104,32 @@
     });
   }
 
-  // Title, description line and tab title for the open page (no iframe reload).
+  // Description line ("description · 作者：author") and tab title for the open page.
   function showMeta(key) {
-    const page = pages[key];
-    descEl.textContent = page.description || "";
-    descEl.hidden = !page.description;
+    const page = key === CONTENTS_KEY ? CONTENTS_META : pages[key];
+    const parts = [page.description, page.author ? `作者：${page.author}` : ""].filter(Boolean);
+    descEl.textContent = parts.join(" · ");
+    descEl.hidden = parts.length === 0;
     frame.title = page.title;
     document.title = `${page.title} · ${SITE_TITLE}`;
   }
 
   function showPage(key) {
-    const page = pages[key];
+    const isContents = key === CONTENTS_KEY;
 
     // Swap in a fresh iframe instead of changing src, so sub-page loads don't add
     // their own history entries. The URL hash stays the only navigation history.
+    // On the contents page the iframe is emptied, so a game's sound stops.
     const fresh = frame.cloneNode(false);
-    fresh.src = page.src;
+    if (isContents) {
+      fresh.removeAttribute("src");
+    } else {
+      fresh.src = pages[key].src;
+    }
+    fresh.hidden = isContents;
     frame.replaceWith(fresh);
     frame = fresh;
+    contentsView.hidden = !isContents;
 
     currentKey = key;
     markActive();
@@ -113,36 +148,109 @@
     showPage(DEFAULT_PAGE);
   }
 
-  function renderUploaded(list) {
+  // ---------- contents table ----------
+
+  function shorten(text) {
+    return text.length > OPTION_TEXT_MAX ? `${text.slice(0, OPTION_TEXT_MAX)}…` : text;
+  }
+
+  // Refill each drop-down with the values in its column; keep the choice if it still exists.
+  function renderFilterOptions(rows) {
+    FILTER_COLUMNS.forEach((column) => {
+      const select = filterSelects[column];
+      const previous = select.value || FILTER_ALL;
+      const values = [...new Set(rows.map((row) => row[column]))].sort((a, b) =>
+        a.localeCompare(b, "zh-Hans"),
+      );
+      const options = [new Option("全部 / All", FILTER_ALL)];
+      values.forEach((value) => {
+        const option = new Option(value ? shorten(value) : "（空）/ (empty)", `=${value}`);
+        if (value) option.title = value;
+        options.push(option);
+      });
+      select.replaceChildren(...options);
+      select.value = options.some((option) => option.value === previous) ? previous : FILTER_ALL;
+    });
+  }
+
+  function cell(text, lang) {
+    const td = document.createElement("td");
+    td.textContent = text;
+    if (lang) td.lang = lang;
+    return td;
+  }
+
+  // The title links to its game. Hovering shows the HTML file name.
+  function titleCell(row) {
+    const td = cell("", "zh-Hans");
+    const fileName = (pages[row.key] ? pages[row.key].src : "").split("/").pop();
+    if (publishing.has(row.key)) {
+      // Not on the site yet: opening it now would show GitHub's 404 page.
+      const note = document.createElement("span");
+      note.className = "contents-pending";
+      note.textContent = `${row.title}${PUBLISHING_LABEL}`;
+      td.append(note);
+    } else {
+      const link = document.createElement("a");
+      link.href = `#${row.key}`;
+      link.textContent = row.title;
+      link.title = `打开 / Open: ${fileName}`;
+      td.append(link);
+    }
+    return td;
+  }
+
+  // Only uploaded games; the built-in ones have their own nav buttons.
+  function renderRows() {
+    const rows = uploaded;
+    const chosen = {};
+    FILTER_COLUMNS.forEach((column) => {
+      chosen[column] = filterSelects[column].value || FILTER_ALL;
+    });
+    const shown = rows.filter((row) =>
+      FILTER_COLUMNS.every(
+        (column) => chosen[column] === FILTER_ALL || chosen[column] === `=${row[column]}`,
+      ),
+    );
+    contentsBody.replaceChildren(
+      ...shown.map((row) => {
+        const tr = document.createElement("tr");
+        tr.append(titleCell(row), cell(row.description, "zh-Hans"), cell(row.author, "zh-Hans"));
+        return tr;
+      }),
+    );
+    contentsCount.textContent = `显示 ${shown.length} / ${rows.length} 个 · Showing ${shown.length} of ${rows.length}`;
+    contentsEmpty.textContent =
+      rows.length === 0
+        ? "还没有上传的游戏 / No uploaded games yet."
+        : "没有符合筛选条件的游戏 / No games match the filters.";
+    contentsEmpty.hidden = shown.length > 0;
+    filtersClear.disabled = FILTER_COLUMNS.every((column) => chosen[column] === FILTER_ALL);
+  }
+
+  function renderContents() {
+    renderFilterOptions(uploaded);
+    renderRows();
+  }
+
+  // ---------- uploaded list ----------
+
+  function setUploaded(list) {
+    uploaded = list;
     pages = { ...BUILTIN_PAGES };
-    const buttons = list.map((entry) => {
+    list.forEach((entry) => {
       pages[entry.key] = {
         src: `${UPLOAD_DIR}${entry.key}.html`,
         title: entry.title,
         description: entry.description,
+        author: entry.author,
       };
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "nav-btn";
-      btn.lang = "zh-Hans";
-      btn.dataset.page = entry.key;
-      btn.textContent = entry.title;
-      if (publishing.has(entry.key)) {
-        // Not on the site yet: opening it now would show GitHub's 404 page.
-        btn.disabled = true;
-        const note = document.createElement("span");
-        note.className = "nav-pending";
-        note.textContent = PUBLISHING_LABEL;
-        btn.append(note);
-      }
-      return btn;
     });
-    uploadedNav.replaceChildren(...buttons);
-    uploadedNav.hidden = buttons.length === 0;
+    renderContents();
   }
 
   function applyList(list) {
-    renderUploaded(list);
+    setUploaded(list);
 
     if (pendingKey && hasOwn(pages, pendingKey)) {
       const key = pendingKey;
@@ -151,7 +259,7 @@
       showPage(key);
       return;
     }
-    if (currentKey && !hasOwn(pages, currentKey)) {
+    if (currentKey && currentKey !== CONTENTS_KEY && !hasOwn(pages, currentKey)) {
       // The open page was deleted.
       route();
       return;
@@ -214,15 +322,26 @@
 
   nav.addEventListener("click", (event) => {
     const btn = event.target.closest(".nav-btn[data-page]");
-    if (!btn || btn.disabled) return;
+    if (!btn) return;
     window.location.hash = btn.dataset.page;
+  });
+
+  contentsView.addEventListener("change", (event) => {
+    if (event.target.matches("select[data-filter]")) renderRows();
+  });
+
+  filtersClear.addEventListener("click", () => {
+    FILTER_COLUMNS.forEach((column) => {
+      filterSelects[column].value = FILTER_ALL;
+    });
+    renderRows();
   });
 
   window.addEventListener("hashchange", route);
 
-  renderUploaded(cleanList(window.MINGDE_UPLOADED_PAGES));
+  setUploaded(cleanList(window.MINGDE_UPLOADED_PAGES));
   const startKey = window.location.hash.slice(1);
-  if (startKey && !hasOwn(pages, startKey) && KEY_PATTERN.test(startKey)) {
+  if (startKey && !pageFromHash() && KEY_PATTERN.test(startKey)) {
     pendingKey = startKey;
   }
   route();

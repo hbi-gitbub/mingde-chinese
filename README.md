@@ -4,6 +4,8 @@ A small static website of Chinese learning games. It has no build step and no de
 
 - **中文冒险世界** (`#adventure`): an adventure with six magic levels, plus a teacher mode.
 - **拼音泡泡大作战** (`#bubbles`): a pinyin bubble game with a teacher word-list manager.
+- **目录 / Contents** (`#contents`, the **…** button): a table of the uploaded games (title,
+  description, author). Click a title to open the game. Each column header has a drop-down to filter the rows.
 
 ## Run it
 
@@ -17,7 +19,7 @@ python -m http.server 8000   # then open http://localhost:8000
 ```
 
 You can link straight to a game with `index.html#adventure`, `index.html#bubbles`, or
-`index.html#<key>` for an uploaded game.
+`index.html#<key>` for an uploaded game, and to the table with `index.html#contents`.
 
 ## Add, change or remove games (⚙ 管理)
 
@@ -37,10 +39,11 @@ this GitHub repo, and GitHub Pages publishes it for every visitor about **1–2 
 
 **3. Manage pages.**
 - **Upload:** choose an `.html` file (at most 50 MB). Enter a **key**: a–z, 0–9 and `-`. It is
-  used in the link `#key` and in the file name, and can't be changed later. Enter a **title**
-  (shown on the button) and an optional **description** (shown under the buttons). The new
-  button shows "（发布中…）" until the page is live.
-- **Edit:** change the title or description. The file isn't uploaded again.
+  used in the link `#key` and in the file name, and can't be changed later. Enter a **title**,
+  an optional **description** and an optional **author**. Uploaded games appear in the
+  contents table (**…**), not as their own button. While the game opens, the line under the
+  buttons shows "description · 作者：author". Its title in the table shows "（发布中…）" until the page is live.
+- **Edit:** change the title, description or author. The file isn't uploaded again.
 - **Replace:** upload a new version of the file under the same key.
 - **Delete:** removes the page and its button.
 - The built-in games (中文冒险世界, 拼音泡泡大作战) can't be changed here.
@@ -59,9 +62,10 @@ before you start and again before you push.
 ## Files
 
 ```
-index.html                  main page: header (⚙ 管理), nav, description line, iframe, Manage dialog
+index.html                  main page: header (⚙ 管理), nav (2 games + …), description line, iframe,
+                            contents table, Manage dialog
 css/style.css               main page styles (light + dark)
-js/main.js                  switches games via the URL hash; shows uploaded games in the nav
+js/main.js                  switches games via the URL hash; builds the contents table and its filters
 js/manage.js                ⚙ 管理: upload / replace / edit / delete through the GitHub API
 js/uploaded-pages.js        list of uploaded games (written by the site; don't hand-edit)
 pages/adventure-world.html  中文冒险世界 (self-contained, ~19 MB)

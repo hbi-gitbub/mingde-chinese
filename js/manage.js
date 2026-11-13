@@ -21,6 +21,7 @@
   const KEY_PATTERN = /^[a-z0-9][a-z0-9-]{0,39}$/;
   const TITLE_MAX = 40;
   const DESC_MAX = 200;
+  const AUTHOR_MAX = 40;
   const TOKEN_STORAGE_KEY = "mingde.githubToken";
   const POLL_INTERVAL_MS = 10 * 1000;
   const POLL_LIMIT_MS = 5 * 60 * 1000;
@@ -46,17 +47,19 @@
   const uploadKey = byId("upload-key");
   const uploadTitle = byId("upload-title");
   const uploadDesc = byId("upload-desc");
+  const uploadAuthor = byId("upload-author");
   const listNote = byId("list-note");
   const pageList = byId("page-list");
   const editForm = byId("edit-form");
   const editHeading = byId("edit-heading");
   const editTitle = byId("edit-title");
   const editDesc = byId("edit-desc");
+  const editAuthor = byId("edit-author");
   const editCancel = byId("edit-cancel");
   const statusEl = byId("manage-status");
 
-  // Keys that uploaded pages may not use: the built-in games, plus "manage".
-  const RESERVED_KEYS = new Set(["manage"]);
+  // Keys that uploaded pages may not use: the built-in games, "contents" and "manage".
+  const RESERVED_KEYS = new Set(["contents", "manage"]);
   document.querySelectorAll(".nav-btn[data-builtin]").forEach((btn) => {
     RESERVED_KEYS.add(btn.dataset.page);
   });
@@ -148,6 +151,8 @@
         title: title.trim(),
         description:
           typeof entry.description === "string" ? entry.description.slice(0, DESC_MAX) : "",
+        // Older entries have no author.
+        author: typeof entry.author === "string" ? entry.author.trim().slice(0, AUTHOR_MAX) : "",
         updated: typeof entry.updated === "string" ? entry.updated : "",
       });
     });
@@ -188,7 +193,7 @@
     });
   }
 
-  // Tell main.js to redraw the nav.
+  // Tell main.js to redraw the contents table.
   function notifyPages(status) {
     const detail = { pages: list.map((page) => ({ ...page })), publishing: [...publishing] };
     if (status !== undefined) detail.status = status;
@@ -337,7 +342,7 @@
 
   // ---------- operations ----------
 
-  async function uploadPage(file, key, title, description) {
+  async function uploadPage(file, { key, title, description, author }) {
     setStatus("正在读取文件… / Reading the file…");
     const content = await readAsBase64(file);
     setStatus(
@@ -346,7 +351,7 @@
     const blob = await api("git/blobs", "POST", { content, encoding: "base64" });
     setStatus("正在提交… / Committing…");
     return commitChange(async (before) => {
-      const entry = { key, title, description, updated: nowIso() };
+      const entry = { key, title, description, author, updated: nowIso() };
       const next = before.slice();
       const index = next.findIndex((page) => page.key === key);
       if (index >= 0) {
@@ -362,13 +367,13 @@
     });
   }
 
-  async function editPage(key, title, description) {
+  async function editPage({ key, title, description, author }) {
     setStatus("正在提交… / Committing…");
     return commitChange(async (before) => {
       const next = before.slice();
       const index = next.findIndex((page) => page.key === key);
       if (index < 0) throw new Error("这个页面已不存在 / This page no longer exists.");
-      next[index] = { ...next[index], title, description, updated: nowIso() };
+      next[index] = { ...next[index], title, description, author, updated: nowIso() };
       return { list: next, message: `Edit page ${key}`, files: [] };
     });
   }
@@ -428,7 +433,7 @@
     return false;
   }
 
-  function checkTitleAndDesc(titleField, descField) {
+  function checkPageFields(titleField, descField, authorField) {
     const title = titleField.value.trim();
     if (!title) return fail(titleField, "请填写标题 / Enter a title.");
     if (title.length > TITLE_MAX) {
@@ -437,7 +442,20 @@
     if (descField.value.trim().length > DESC_MAX) {
       return fail(descField, `说明最多 ${DESC_MAX} 个字 / Description: up to ${DESC_MAX} characters.`);
     }
+    if (authorField.value.trim().length > AUTHOR_MAX) {
+      return fail(authorField, `作者最多 ${AUTHOR_MAX} 个字 / Author: up to ${AUTHOR_MAX} characters.`);
+    }
     return true;
+  }
+
+  // Title, description and author as typed in a form.
+  function pageFields(key, titleField, descField, authorField) {
+    return {
+      key,
+      title: titleField.value.trim(),
+      description: descField.value.trim(),
+      author: authorField.value.trim(),
+    };
   }
 
   function checkUploadForm() {
@@ -463,7 +481,7 @@
     if (RESERVED_KEYS.has(key)) {
       return fail(uploadKey, `“${key}” 已被内置页面使用 / "${key}" is used by a built-in page.`);
     }
-    return checkTitleAndDesc(uploadTitle, uploadDesc);
+    return checkPageFields(uploadTitle, uploadDesc, uploadAuthor);
   }
 
   // ---------- rendering ----------
@@ -497,12 +515,13 @@
       const desc = el("span", "page-row-desc", page.description || "—");
       desc.lang = "zh-Hans";
       desc.title = page.description;
-      info.append(
-        title,
-        el("code", "page-row-key", page.key),
-        el("span", "page-row-date", page.updated.slice(0, 10)),
-        desc,
-      );
+      info.append(title, el("code", "page-row-key", page.key));
+      if (page.author) {
+        const author = el("span", "page-row-author", `作者：${page.author}`);
+        author.lang = "zh-Hans";
+        info.append(author);
+      }
+      info.append(el("span", "page-row-date", page.updated.slice(0, 10)), desc);
       const actions = el("div", "page-row-actions");
       actions.append(
         actionButton("edit", "编辑 Edit", page),
@@ -530,6 +549,7 @@
     editHeading.textContent = `编辑 / Edit: ${page.title} (${page.key})`;
     editTitle.value = page.title;
     editDesc.value = page.description;
+    editAuthor.value = page.author;
     editForm.hidden = false;
     editTitle.focus();
   }
@@ -617,9 +637,8 @@
     event.preventDefault();
     if (busy || !needToken() || !checkUploadForm()) return;
     const file = uploadFile.files[0];
-    const key = uploadKey.value.trim();
-    const title = uploadTitle.value.trim();
-    const description = uploadDesc.value.trim();
+    const fields = pageFields(uploadKey.value.trim(), uploadTitle, uploadDesc, uploadAuthor);
+    const { key } = fields;
     if (
       list.some((page) => page.key === key) &&
       !window.confirm(`“${key}” 已存在，要替换它吗？\nA page with the key "${key}" already exists. Replace it?`)
@@ -627,12 +646,12 @@
       return;
     }
     runTask(async () => {
-      const result = await uploadPage(file, key, title, description);
+      const result = await uploadPage(file, fields);
       uploadForm.reset();
       if (editingKey === key) stopEdit();
       afterCommit(result, key, true);
       setStatus(
-        `✓ 已提交 “${title}”，正在发布（约 1–2 分钟）/ Committed. Publishing takes about 1–2 minutes.`,
+        `✓ 已提交 “${fields.title}”，正在发布（约 1–2 分钟）/ Committed. Publishing takes about 1–2 minutes.`,
         "ok",
       );
     });
@@ -651,6 +670,7 @@
       uploadKey.value = page.key;
       uploadTitle.value = page.title;
       uploadDesc.value = page.description;
+      uploadAuthor.value = page.author;
       setStatus(`请选择新文件来替换 “${page.title}” / Choose the new file to replace "${page.title}".`);
       uploadForm.scrollIntoView({ block: "nearest" });
       uploadFile.focus();
@@ -671,11 +691,10 @@
   editForm.addEventListener("submit", (event) => {
     event.preventDefault();
     const key = editingKey;
-    if (busy || !key || !needToken() || !checkTitleAndDesc(editTitle, editDesc)) return;
-    const title = editTitle.value.trim();
-    const description = editDesc.value.trim();
+    if (busy || !key || !needToken() || !checkPageFields(editTitle, editDesc, editAuthor)) return;
+    const fields = pageFields(key, editTitle, editDesc, editAuthor);
     runTask(async () => {
-      const result = await editPage(key, title, description);
+      const result = await editPage(fields);
       stopEdit();
       afterCommit(result, key, false);
       setStatus("✓ 已保存，正在发布（约 1–2 分钟）/ Saved. Publishing takes about 1–2 minutes.", "ok");

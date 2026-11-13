@@ -5,16 +5,19 @@ Rules for any AI coding agent (Codex, Cursor, Copilot, Claude, and others) worki
 ## 1. Project overview
 明德中文乐园 (Mingde Chinese) is a small static website of Chinese learning games. A main page
 (`index.html`) shows one game at a time inside an iframe: 中文冒险世界 (an adventure with six
-levels) and 拼音泡泡大作战 (a pinyin bubble game with a teacher word-list manager). A teacher
+levels) and 拼音泡泡大作战 (a pinyin bubble game with a teacher word-list manager). The nav
+shows only these two plus a "…" button that opens the contents page (`#contents`): a table of
+the uploaded games with a filter drop-down per column. A teacher
 can also upload, replace, edit and delete more game pages from the site itself (⚙ 管理). Those
 changes are committed to this GitHub repo through the GitHub API. It uses plain HTML, CSS and
 JavaScript, with no build step and no framework.
 
 ## 2. File structure
 ```
-index.html                main page: header (title, status, ⚙ 管理), nav, description line, iframe, Manage dialog
-css/style.css             styles for the main page shell and the dialog (light + dark theme tokens on :root)
-js/main.js                main page logic: page map, hash routing, iframe swap, nav of uploaded pages
+index.html                main page: header (title, status, ⚙ 管理), nav (2 games + "…"), description line,
+                          iframe, contents table (#contents), Manage dialog
+css/style.css             styles for the shell, the contents table and the dialog (light + dark tokens on :root)
+js/main.js                main page logic: page map, hash routing, iframe swap, contents table + filters
 js/manage.js              ⚙ 管理 dialog: GitHub token, upload / replace / edit / delete via the GitHub API
 js/uploaded-pages.js      list of uploaded pages (window.MINGDE_UPLOADED_PAGES), written by manage.js
 pages/adventure-world.html  vendored game: 中文冒险世界 · 六大魔法关卡 (~19 MB, self-contained)
@@ -30,22 +33,36 @@ CLAUDE.md                 Claude Code notes (points here)
 - Or use a static server from the project root, then open the printed URL:
   - `npx serve .`
   - `python -m http.server 8000` → http://localhost:8000
-- Direct links: `index.html#adventure`, `index.html#bubbles`, and `index.html#<key>` for an uploaded page.
+- Direct links: `index.html#adventure`, `index.html#bubbles`, `index.html#contents` (uploaded games),
+  and `index.html#<key>` for an uploaded page.
 
 ## 4. Architecture rules
 - **iframe shell:** `index.html` has a single `<iframe id="content" allow="autoplay">`. `js/main.js`
-  owns a `BUILTIN_PAGES` map (`adventure`, `bubbles` → `src`, `title`, `description`), merges the
+  owns a `BUILTIN_PAGES` map (`adventure`, `bubbles` → `src`, `title`, `description`, optional
+  `author`), merges the
   uploaded pages into it, and is the only code that changes the iframe.
   `allow="autoplay"` must stay: the adventure game plays sound in its own inner iframe.
-- **Hash routing:** the current page lives in the URL hash (`#adventure`, `#bubbles`, `#<key>`).
-  One delegated click listener on the nav sets the hash, and a `hashchange` listener loads the
-  page. Default is `adventure`. Each load swaps in a fresh iframe so the hash is the only browser
-  history entry. The open page's `description` is shown in `#page-desc` under the nav.
+- **Hash routing:** the current page lives in the URL hash (`#adventure`, `#bubbles`,
+  `#contents`, `#<key>`). One delegated click listener on the nav sets the hash, and a
+  `hashchange` listener loads the page. Default is `adventure`. Each load swaps in a fresh iframe
+  so the hash is the only browser history entry. The open page's `description` and `author` are
+  shown in `#page-desc` under the nav, as "description · 作者：author".
+- **Nav and contents page:** the nav has only the built-in game buttons and the "…" button
+  (`data-page="contents"`). Uploaded games get no nav button. `#contents` hides the iframe
+  (emptied, so game sound stops) and shows `#contents-view`: a table, built by `main.js`, with
+  the columns Title, Description and Author. It lists only the uploaded games (the built-in
+  ones have their own nav buttons); with none, it says "还没有上传的游戏". The header row holds a `<select data-filter="…">` for each column, with
+  "全部 / All" plus every value in that column. Rows must match every chosen filter. Each title
+  is a link (`href="#<key>"`, the HTML file name as its tooltip). While a game is still
+  publishing, its title is plain text followed by "（发布中…）". The "…" button is marked active on
+  `#contents` and on uploaded games. `contents` is a reserved key.
 - **Uploaded pages (⚙ 管理):**
   - Files live at `pages/uploads/<key>.html`. The list lives in `js/uploaded-pages.js` as
-    `window.MINGDE_UPLOADED_PAGES = [{ key, title, description, updated }]`. There is no path
-    field: the path is always built from the key. Key `^[a-z0-9][a-z0-9-]{0,39}$`, not a
-    built-in key and not `manage`. Title 1–40 characters. Description 0–200 characters.
+    `window.MINGDE_UPLOADED_PAGES = [{ key, title, description, author, updated }]`. There is no
+    path field: the path is always built from the key. Key `^[a-z0-9][a-z0-9-]{0,39}$`, not a
+    built-in key, not `contents` and not `manage`. Title 1–40 characters. Description 0–200 characters.
+    Author 0–40 characters (set in the Upload and Edit forms). Entries without `author` (older
+    ones) are read as `""`.
   - The list is a script, not JSON, so it also loads from `file://`. `manage.js` writes it in
     an exact format (`serializeList` / `parseList`), so don't hand-edit its layout.
   - `js/manage.js` commits through the GitHub Git Data API (blob → tree → commit → update ref).
@@ -53,12 +70,13 @@ CLAUDE.md                 Claude Code notes (points here)
     the list. On 422 (`main` moved) it retries once. Owner, repo and branch are constants at the
     top of `manage.js`.
   - After a commit it checks the live site's `js/uploaded-pages.js?t=…` every 10 s, for up to
-    5 min, until it matches. Meanwhile, newly uploaded buttons are disabled with "（发布中…）".
+    5 min, until it matches. Meanwhile, the game's title in the contents table shows "（发布中…）"
+    and isn't a link.
   - `manage.js` and `main.js` talk only through the DOM event
     `document.dispatchEvent(new CustomEvent("pages-changed", { detail: { pages, publishing, status } }))`.
   - Over http(s), `main.js` reloads `js/uploaded-pages.js?t=<now>` once, to get past GitHub's
     ~10 min cache.
-  - User text (titles, descriptions) is only ever shown with `textContent` or attributes,
+  - User text (titles, descriptions, authors) is only ever shown with `textContent` or attributes,
     never with `innerHTML`.
   - Upload limits: `.html`/`.htm`, not empty, at most `MAX_UPLOAD_MB` (50). The file must be
     self-contained: linked images or scripts are not uploaded.
@@ -101,11 +119,13 @@ CLAUDE.md                 Claude Code notes (points here)
 Normally a teacher adds a page from the site: ⚙ 管理 → Upload. Nothing in the code changes.
 To add a new **built-in** page (fixed, can't be deleted from the site):
 1. Put the file in `pages/` with a kebab-case ASCII name (rename vendored files; don't edit them).
-2. Pick a short hash key, e.g. `story`. It must not be used by an uploaded page.
+2. Pick a short hash key, e.g. `story`. It must not be used by an uploaded page, and not be
+   `contents` or `manage`.
 3. In `index.html`, add `<button type="button" class="nav-btn" data-page="story" data-builtin>…</button>`
-   before `#nav-uploaded`.
+   before the "…" button (`data-page="contents"`).
 4. In `js/main.js`, add `story: { src: "pages/<file>.html", title: "…", description: "…" }` to
-   `BUILTIN_PAGES`.
+   `BUILTIN_PAGES` (optionally also `author: "…"`). Built-in games are not listed in the
+   contents table.
 5. Update the file lists in `README.md` and in section 2 of this file.
 
 ## 7. Testing
@@ -117,10 +137,13 @@ To add a new **built-in** page (fixed, can't be deleted from the site):
 - Start a level in each game. Sound plays after the first click.
 - Check a 375px-wide viewport (DevTools device mode): the nav wraps and there's no horizontal scroll.
   The header stays on one row with ⚙ 管理 at the right end. The open dialog fits the screen.
-- Each game shows its description under the nav.
+- Each game shows its description under the nav, followed by "· 作者：…" when it has an author.
+- "…" opens `#contents`: the table lists every uploaded game and no built-in one. Each filter drop-down narrows the rows,
+  "Clear filters" shows all again, and clicking a title opens its game (with "…" still highlighted for
+  uploaded games). At 375px the table fits without page-wide horizontal scroll.
 - ⚙ 管理 without a token: the list is visible, and Upload, Edit or Delete asks for a token.
 - Test uploads with a throwaway key (e.g. `test`) on the live site. Each action makes one commit.
-  The button shows "（发布中…）" until it is live. Delete it again afterwards, and `git pull`.
+  Its title in the contents table shows "（发布中…）" until it is live. Delete it again afterwards, and `git pull`.
 
 ## 8. Don'ts
 - No frameworks (React, Vue, …), bundlers (Vite, webpack, …), or transpilers.
@@ -129,4 +152,4 @@ To add a new **built-in** page (fixed, can't be deleted from the site):
 - Don't add globals (besides `MINGDE_UPLOADED_PAGES`), `fetch()` of local files, or ES modules.
 - Never commit a GitHub token, and never write one into a file.
 - Don't hand-edit the layout of `js/uploaded-pages.js`; `manage.js` parses it.
-- Don't use `innerHTML` with page titles or descriptions.
+- Don't use `innerHTML` with page titles, descriptions or authors.
