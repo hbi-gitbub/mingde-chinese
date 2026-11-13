@@ -5,21 +5,110 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>明德中文乐园</title>
   <link rel="stylesheet" href="css/style.css">
+  <script src="js/uploaded-pages.js" defer></script>
   <script src="js/main.js" defer></script>
+  <script src="js/manage.js" defer></script>
 </head>
 <body class="shell">
   <header class="shell-header">
     <h1 lang="zh-Hans">明德中文乐园</h1>
     <p id="status" class="status" role="status" aria-live="polite"></p>
+    <button type="button" id="manage-btn" class="btn manage-btn" aria-haspopup="dialog"
+      aria-label="管理 / Manage pages"><span aria-hidden="true">⚙</span> <span lang="zh-Hans">管理</span></button>
   </header>
 
   <nav class="shell-nav" aria-label="Pages">
-    <button type="button" class="nav-btn" data-page="adventure" lang="zh-Hans">中文冒险世界</button>
-    <button type="button" class="nav-btn" data-page="bubbles" lang="zh-Hans">拼音泡泡大作战</button>
+    <button type="button" class="nav-btn" data-page="adventure" data-builtin lang="zh-Hans">中文冒险世界</button>
+    <button type="button" class="nav-btn" data-page="bubbles" data-builtin lang="zh-Hans">拼音泡泡大作战</button>
+    <span id="nav-uploaded" class="nav-uploaded" hidden></span>
   </nav>
+
+  <p id="page-desc" class="page-desc" lang="zh-Hans" hidden></p>
 
   <main class="shell-main">
     <iframe id="content" class="content-frame" title="Page content" allow="autoplay"></iframe>
   </main>
+
+  <dialog id="manage-dialog" class="manage-dialog" aria-labelledby="manage-title">
+    <div class="dialog-head">
+      <h2 id="manage-title"><span lang="zh-Hans">管理页面</span> / Manage pages</h2>
+      <button type="button" id="manage-close" class="btn btn-small" aria-label="关闭 / Close">✕</button>
+    </div>
+
+    <section class="manage-section" aria-labelledby="token-heading">
+      <h3 id="token-heading">① GitHub <span lang="zh-Hans">令牌</span> / token</h3>
+      <p id="token-state" class="hint"></p>
+      <div class="field-row">
+        <input type="password" id="token-input" class="field" autocomplete="off" spellcheck="false"
+          placeholder="github_pat_…" aria-label="GitHub token">
+        <button type="button" id="token-use" class="btn btn-small"><span lang="zh-Hans">使用</span> / Use</button>
+        <button type="button" id="token-forget" class="btn btn-small"><span lang="zh-Hans">清除</span> / Forget</button>
+      </div>
+      <label class="check">
+        <input type="checkbox" id="token-remember">
+        <span><span lang="zh-Hans">在此设备上记住</span> / Remember on this device</span>
+      </label>
+      <p class="hint warning">⚠ <span lang="zh-Hans">上传的页面与本站同源，可能读取这里的令牌。只上传可信的页面。</span>
+        Uploaded pages run on this site's origin and could read the token. Only upload pages you trust.</p>
+      <details class="help">
+        <summary><span lang="zh-Hans">如何创建令牌</span> / How to create a token</summary>
+        <ol>
+          <li>Open <a href="https://github.com/settings/personal-access-tokens/new" target="_blank"
+            rel="noopener noreferrer">GitHub → Settings → Fine-grained tokens → Generate new token</a>.</li>
+          <li>Expiration: 90 days. Repository access: <strong>Only select repositories</strong> →
+            <code>mingde-chinese</code>.</li>
+          <li>Permissions → Repository permissions → <strong>Contents: Read and write</strong>.</li>
+          <li>Generate, copy the token (<code>github_pat_…</code>), paste it above and press Use.</li>
+        </ol>
+      </details>
+    </section>
+
+    <section class="manage-section" aria-labelledby="upload-heading">
+      <h3 id="upload-heading">② <span lang="zh-Hans">上传页面</span> / Upload a page</h3>
+      <form id="upload-form" class="manage-form" novalidate>
+        <label class="field-label" for="upload-file"><span lang="zh-Hans">文件</span> / File (.html, max 50 MB)</label>
+        <input type="file" id="upload-file" class="field" accept=".html,.htm,text/html">
+        <p id="upload-note" class="hint" hidden></p>
+
+        <label class="field-label" for="upload-key"><span lang="zh-Hans">键</span> / Key</label>
+        <input type="text" id="upload-key" class="field" maxlength="40" autocomplete="off"
+          spellcheck="false" placeholder="story" aria-describedby="upload-key-hint">
+        <p id="upload-key-hint" class="hint">a–z, 0–9, - · <span lang="zh-Hans">用于网址和文件名，之后不能修改</span>
+          (used in the URL <code>#story</code> and the file name; can't be changed later)</p>
+
+        <label class="field-label" for="upload-title"><span lang="zh-Hans">标题</span> / Title</label>
+        <input type="text" id="upload-title" class="field" maxlength="40" lang="zh-Hans" placeholder="故事">
+
+        <label class="field-label" for="upload-desc"><span lang="zh-Hans">说明</span> / Description (optional)</label>
+        <textarea id="upload-desc" class="field" maxlength="200" rows="2" lang="zh-Hans"
+          placeholder="听故事，学生字（一年级）"></textarea>
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary"><span lang="zh-Hans">上传</span> / Upload</button>
+          <button type="reset" class="btn"><span lang="zh-Hans">清空</span> / Clear</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="manage-section" aria-labelledby="list-heading">
+      <h3 id="list-heading">③ <span lang="zh-Hans">已上传的页面</span> / Uploaded pages</h3>
+      <p id="list-note" class="hint"></p>
+      <ul id="page-list" class="page-list"></ul>
+
+      <form id="edit-form" class="manage-form edit-form" novalidate hidden>
+        <h4 id="edit-heading"></h4>
+        <label class="field-label" for="edit-title"><span lang="zh-Hans">标题</span> / Title</label>
+        <input type="text" id="edit-title" class="field" maxlength="40" lang="zh-Hans">
+        <label class="field-label" for="edit-desc"><span lang="zh-Hans">说明</span> / Description (optional)</label>
+        <textarea id="edit-desc" class="field" maxlength="200" rows="2" lang="zh-Hans"></textarea>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary"><span lang="zh-Hans">保存</span> / Save</button>
+          <button type="button" id="edit-cancel" class="btn"><span lang="zh-Hans">取消</span> / Cancel</button>
+        </div>
+      </form>
+    </section>
+
+    <p id="manage-status" class="manage-status" role="status" aria-live="polite"></p>
+  </dialog>
 </body>
 </html>

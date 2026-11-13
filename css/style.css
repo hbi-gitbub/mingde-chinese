@@ -8,6 +8,8 @@
   --border: #dcd8cf;
   --accent: #b3261e;
   --accent-text: #ffffff;
+  --ok: #1a7f37;
+  --backdrop: rgba(20, 22, 26, 0.45);
   --font: system-ui, -apple-system, "Segoe UI", Roboto, "Microsoft YaHei", "PingFang SC", sans-serif;
   color-scheme: light dark;
 }
@@ -21,6 +23,8 @@
     --border: #353a42;
     --accent: #e5534b;
     --accent-text: #16181c;
+    --ok: #57ab5a;
+    --backdrop: rgba(0, 0, 0, 0.6);
   }
 }
 
@@ -87,9 +91,7 @@ body {
 
 .shell-header {
   display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
+  align-items: center;
   gap: 4px 16px;
   padding: 12px 16px;
   background: var(--surface);
@@ -97,15 +99,29 @@ body {
 }
 
 .shell-header h1 {
+  flex: none;
   margin: 0;
   font-size: 1.25rem;
 }
 
+/* Takes the free space between the title and the Manage button; long text gets "…". */
 .status {
+  flex: 1;
+  min-width: 0;
   margin: 0;
   min-height: 1.5em;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
   color: var(--muted);
   font-size: 0.9rem;
+}
+
+.manage-btn {
+  flex: none;
+  margin-left: auto;
+  padding: 6px 12px;
+  white-space: nowrap;
 }
 
 .shell-nav {
@@ -113,6 +129,38 @@ body {
   flex-wrap: wrap;
   gap: 8px;
   padding: 8px 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+/* Uploaded pages: their own group after the built-in games. */
+.nav-uploaded {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-left: 8px;
+  border-left: 1px solid var(--border);
+}
+
+.nav-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.nav-btn:disabled:hover {
+  border-color: var(--border);
+}
+
+.nav-pending {
+  font-size: 0.85em;
+}
+
+/* One-line description of the open game. */
+.page-desc {
+  margin: 0;
+  padding: 6px 16px;
+  color: var(--muted);
+  font-size: 0.9rem;
   background: var(--surface);
   border-bottom: 1px solid var(--border);
 }
@@ -128,4 +176,235 @@ body {
   height: 100%;
   border: 0;
   background: var(--bg);
+}
+
+/* ---------- Manage dialog (⚙ 管理) ---------- */
+
+.btn-small {
+  padding: 4px 12px;
+  font-size: 0.9rem;
+}
+
+.btn-danger {
+  color: var(--accent);
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.manage-dialog {
+  width: min(680px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  padding: 0;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.manage-dialog::backdrop {
+  background: var(--backdrop);
+}
+
+.dialog-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.dialog-head h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.manage-section {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.manage-section h3 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+}
+
+.manage-section h4 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.hint {
+  margin: 4px 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.warning {
+  color: var(--accent);
+}
+
+.field {
+  width: 100%;
+  min-width: 0;
+  padding: 6px 10px;
+  font: inherit;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+textarea.field {
+  resize: vertical;
+}
+
+.field-label {
+  display: block;
+  margin-top: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.field-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.field-row .field {
+  flex: 1 1 200px;
+  width: auto;
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+}
+
+.help {
+  margin-top: 8px;
+  font-size: 0.9rem;
+}
+
+.help summary {
+  cursor: pointer;
+}
+
+.help ol {
+  margin: 8px 0 0;
+  padding-left: 20px;
+}
+
+.help a {
+  color: var(--accent);
+}
+
+.manage-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.page-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.page-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 0;
+  border-top: 1px solid var(--border);
+}
+
+.page-row:first-child {
+  border-top: 0;
+}
+
+.page-row-info {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  flex: 1 1 260px;
+  min-width: 0;
+}
+
+.page-row-key,
+.page-row-date {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.page-row-desc {
+  flex-basis: 100%;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.page-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.edit-form {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+}
+
+.manage-status {
+  min-height: 1.5em;
+  margin: 0;
+  padding: 12px 16px;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.manage-status[data-kind="error"] {
+  color: var(--accent);
+}
+
+.manage-status[data-kind="ok"] {
+  color: var(--ok);
+}
+
+@media (max-width: 480px) {
+  .shell-header h1 {
+    font-size: 1.1rem;
+  }
+
+  .manage-dialog {
+    width: calc(100vw - 16px);
+    max-height: calc(100dvh - 16px);
+  }
 }
