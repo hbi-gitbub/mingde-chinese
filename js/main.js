@@ -28,16 +28,18 @@
   const TITLE_MAX = 40;
   const DESC_MAX = 200;
   const AUTHOR_MAX = 40;
+  const BOOK_MAX = 40;
   const PUBLISHING_LABEL = "（发布中…）";
   const PUBLISHING_STATUS = "发布中… / Publishing…";
   // Columns with a filter drop-down; "all" shows every row, "=<value>" only matching rows.
-  const FILTER_COLUMNS = ["title", "description", "author"];
+  const FILTER_COLUMNS = ["title", "book", "author"];
   const FILTER_ALL = "all";
   const OPTION_TEXT_MAX = 30;
 
   const nav = document.querySelector(".shell-nav");
   const statusEl = document.getElementById("status");
   const descEl = document.getElementById("page-desc");
+  const navCurrent = document.getElementById("nav-current");
   const contentsView = document.getElementById("contents-view");
   const contentsBody = document.getElementById("contents-body");
   const contentsCount = document.getElementById("contents-count");
@@ -81,6 +83,7 @@
         key,
         title: title.trim(),
         description: cleanText(entry.description, DESC_MAX),
+        book: cleanText(entry.book, BOOK_MAX),
         author: cleanText(entry.author, AUTHOR_MAX),
       });
     });
@@ -93,6 +96,7 @@
   }
 
   // Built-in games light up their own button; the contents page and uploaded games light up "…".
+  // An uploaded game also shows its title right after "…".
   function markActive() {
     const active = hasOwn(BUILTIN_PAGES, currentKey) ? currentKey : CONTENTS_KEY;
     nav.querySelectorAll(".nav-btn[data-page]").forEach((btn) => {
@@ -102,6 +106,11 @@
         btn.removeAttribute("aria-current");
       }
     });
+    const isUploaded =
+      currentKey !== CONTENTS_KEY && !hasOwn(BUILTIN_PAGES, currentKey) && hasOwn(pages, currentKey);
+    navCurrent.textContent = isUploaded ? pages[currentKey].title : "";
+    navCurrent.title = navCurrent.textContent;
+    navCurrent.hidden = !isUploaded;
   }
 
   // Description line ("description · 作者：author") and tab title for the open page.
@@ -180,7 +189,7 @@
     return td;
   }
 
-  // The title links to its game. Hovering shows the HTML file name.
+  // The title links to its game. Hovering shows the description and the HTML file name.
   function titleCell(row) {
     const td = cell("", "zh-Hans");
     const fileName = (pages[row.key] ? pages[row.key].src : "").split("/").pop();
@@ -194,7 +203,7 @@
       const link = document.createElement("a");
       link.href = `#${row.key}`;
       link.textContent = row.title;
-      link.title = `打开 / Open: ${fileName}`;
+      link.title = [row.description, `打开 / Open: ${fileName}`].filter(Boolean).join("\n");
       td.append(link);
     }
     return td;
@@ -215,7 +224,7 @@
     contentsBody.replaceChildren(
       ...shown.map((row) => {
         const tr = document.createElement("tr");
-        tr.append(titleCell(row), cell(row.description, "zh-Hans"), cell(row.author, "zh-Hans"));
+        tr.append(titleCell(row), cell(row.book, "zh-Hans"), cell(row.author, "zh-Hans"));
         return tr;
       }),
     );

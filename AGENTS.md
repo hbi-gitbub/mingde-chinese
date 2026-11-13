@@ -14,7 +14,7 @@ JavaScript, with no build step and no framework.
 
 ## 2. File structure
 ```
-index.html                main page: header (title, status, ⚙ 管理), nav (2 games + "…"), description line,
+index.html                main page: header (title, status, ⚙ 管理), nav (2 games + "…" + open game's title), description line,
                           iframe, contents table (#contents), Manage dialog
 css/style.css             styles for the shell, the contents table and the dialog (light + dark tokens on :root)
 js/main.js                main page logic: page map, hash routing, iframe swap, contents table + filters
@@ -50,19 +50,21 @@ CLAUDE.md                 Claude Code notes (points here)
 - **Nav and contents page:** the nav has only the built-in game buttons and the "…" button
   (`data-page="contents"`). Uploaded games get no nav button. `#contents` hides the iframe
   (emptied, so game sound stops) and shows `#contents-view`: a table, built by `main.js`, with
-  the columns Title, Description and Author. It lists only the uploaded games (the built-in
+  the columns Title, 课本/Book and Author (the description is not a column; it shows in the
+  title's tooltip and in `#page-desc`). It lists only the uploaded games (the built-in
   ones have their own nav buttons); with none, it says "还没有上传的游戏". The header row holds a `<select data-filter="…">` for each column, with
   "全部 / All" plus every value in that column. Rows must match every chosen filter. Each title
   is a link (`href="#<key>"`, the HTML file name as its tooltip). While a game is still
   publishing, its title is plain text followed by "（发布中…）". The "…" button is marked active on
-  `#contents` and on uploaded games. `contents` is a reserved key.
+  `#contents` and on uploaded games. While an uploaded game is open, its title is shown right after
+  "…" in the nav (`#nav-current`, a plain label, not a button). `contents` is a reserved key.
 - **Uploaded pages (⚙ 管理):**
   - Files live at `pages/uploads/<key>.html`. The list lives in `js/uploaded-pages.js` as
-    `window.MINGDE_UPLOADED_PAGES = [{ key, title, description, author, updated }]`. There is no
+    `window.MINGDE_UPLOADED_PAGES = [{ key, title, description, book, author, updated }]`. There is no
     path field: the path is always built from the key. Key `^[a-z0-9][a-z0-9-]{0,39}$`, not a
     built-in key, not `contents` and not `manage`. Title 1–40 characters. Description 0–200 characters.
-    Author 0–40 characters (set in the Upload and Edit forms). Entries without `author` (older
-    ones) are read as `""`.
+    Book (课本, the textbook) 0–40 characters. Author 0–40 characters. Book and author are set
+    in the Upload and Edit forms. Entries without `book` or `author` (older ones) read them as `""`.
   - The list is a script, not JSON, so it also loads from `file://`. `manage.js` writes it in
     an exact format (`serializeList` / `parseList`), so don't hand-edit its layout.
   - `js/manage.js` commits through the GitHub Git Data API (blob → tree → commit → update ref).
@@ -76,7 +78,7 @@ CLAUDE.md                 Claude Code notes (points here)
     `document.dispatchEvent(new CustomEvent("pages-changed", { detail: { pages, publishing, status } }))`.
   - Over http(s), `main.js` reloads `js/uploaded-pages.js?t=<now>` once, to get past GitHub's
     ~10 min cache.
-  - User text (titles, descriptions, authors) is only ever shown with `textContent` or attributes,
+  - User text (titles, descriptions, books, authors) is only ever shown with `textContent` or attributes,
     never with `innerHTML`.
   - Upload limits: `.html`/`.htm`, not empty, at most `MAX_UPLOAD_MB` (50). The file must be
     self-contained: linked images or scripts are not uploaded.
@@ -138,9 +140,11 @@ To add a new **built-in** page (fixed, can't be deleted from the site):
 - Check a 375px-wide viewport (DevTools device mode): the nav wraps and there's no horizontal scroll.
   The header stays on one row with ⚙ 管理 at the right end. The open dialog fits the screen.
 - Each game shows its description under the nav, followed by "· 作者：…" when it has an author.
-- "…" opens `#contents`: the table lists every uploaded game and no built-in one. Each filter drop-down narrows the rows,
+- "…" opens `#contents`: the table lists every uploaded game and no built-in one, with the columns
+  Title, 课本/Book and Author. Hovering a title shows its description. Each filter drop-down narrows the rows,
   "Clear filters" shows all again, and clicking a title opens its game (with "…" still highlighted for
-  uploaded games). At 375px the table fits without page-wide horizontal scroll.
+  uploaded games, and the game's title right after "…"; the title disappears on `#contents` and the
+  built-in games). At 375px the table fits without page-wide horizontal scroll.
 - ⚙ 管理 without a token: the list is visible, and Upload, Edit or Delete asks for a token.
 - Test uploads with a throwaway key (e.g. `test`) on the live site. Each action makes one commit.
   Its title in the contents table shows "（发布中…）" until it is live. Delete it again afterwards, and `git pull`.
@@ -152,4 +156,4 @@ To add a new **built-in** page (fixed, can't be deleted from the site):
 - Don't add globals (besides `MINGDE_UPLOADED_PAGES`), `fetch()` of local files, or ES modules.
 - Never commit a GitHub token, and never write one into a file.
 - Don't hand-edit the layout of `js/uploaded-pages.js`; `manage.js` parses it.
-- Don't use `innerHTML` with page titles, descriptions or authors.
+- Don't use `innerHTML` with page titles, descriptions, books or authors.

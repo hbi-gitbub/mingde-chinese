@@ -22,6 +22,7 @@
     <button type="button" class="nav-btn" data-page="bubbles" data-builtin lang="zh-Hans">拼音泡泡大作战</button>
     <button type="button" class="nav-btn nav-more" data-page="contents" title="目录：更多游戏 / Contents: more games"
       aria-label="目录 / Contents: more games">…</button>
+    <span id="nav-current" class="nav-current" lang="zh-Hans" hidden></span>
   </nav>
 
   <p id="page-desc" class="page-desc" lang="zh-Hans" hidden></p>
@@ -39,7 +40,7 @@
         <table class="contents-table">
           <colgroup>
             <col class="col-title">
-            <col class="col-desc">
+            <col class="col-book">
             <col class="col-author">
           </colgroup>
           <thead>
@@ -49,8 +50,8 @@
                 <select class="filter" data-filter="title" aria-label="按标题筛选 / Filter by title"></select>
               </th>
               <th scope="col">
-                <span class="th-name"><span lang="zh-Hans">说明</span> / Description</span>
-                <select class="filter" data-filter="description" aria-label="按说明筛选 / Filter by description"></select>
+                <span class="th-name"><span lang="zh-Hans">课本</span> / Book</span>
+                <select class="filter" data-filter="book" aria-label="按课本筛选 / Filter by book"></select>
               </th>
               <th scope="col">
                 <span class="th-name"><span lang="zh-Hans">作者</span> / Author</span>
@@ -108,19 +109,21 @@
 
         <label class="field-label" for="upload-key"><span lang="zh-Hans">键</span> / Key</label>
         <input type="text" id="upload-key" class="field" maxlength="40" autocomplete="off"
-          spellcheck="false" placeholder="rj-2a-3-adventure" aria-describedby="upload-key-hint">
+          spellcheck="false" value="rj-2a-3-adventure" aria-describedby="upload-key-hint">
         <p id="upload-key-hint" class="hint">a–z, 0–9, - · <span lang="zh-Hans">用于网址和文件名，之后不能修改</span>
           (used in the URL <code>#rj-2a-3-adventure</code> and the file name; can't be changed later)</p>
 
         <label class="field-label" for="upload-title"><span lang="zh-Hans">标题</span> / Title</label>
-        <input type="text" id="upload-title" class="field" maxlength="40" lang="zh-Hans" placeholder="中文冒险世界">
+        <input type="text" id="upload-title" class="field" maxlength="40" lang="zh-Hans" value="中文冒险世界">
 
         <label class="field-label" for="upload-desc"><span lang="zh-Hans">说明</span> / Description (optional)</label>
-        <textarea id="upload-desc" class="field" maxlength="200" rows="2" lang="zh-Hans"
-          placeholder="人教语文2册上第3课"></textarea>
+        <textarea id="upload-desc" class="field" maxlength="200" rows="2" lang="zh-Hans">六大魔法关卡，闯关学中文</textarea>
+
+        <label class="field-label" for="upload-book"><span lang="zh-Hans">课本</span> / Book (optional)</label>
+        <input type="text" id="upload-book" class="field" maxlength="40" lang="zh-Hans" value="人教语文二年级上册第三课">
 
         <label class="field-label" for="upload-author"><span lang="zh-Hans">作者</span> / Author (optional)</label>
-        <input type="text" id="upload-author" class="field" maxlength="40" lang="zh-Hans" placeholder="王老师">
+        <input type="text" id="upload-author" class="field" maxlength="40" lang="zh-Hans" value="王老师">
 
         <div class="form-actions">
           <button type="submit" class="btn btn-primary"><span lang="zh-Hans">上传</span> / Upload</button>
@@ -140,6 +143,8 @@
         <input type="text" id="edit-title" class="field" maxlength="40" lang="zh-Hans">
         <label class="field-label" for="edit-desc"><span lang="zh-Hans">说明</span> / Description (optional)</label>
         <textarea id="edit-desc" class="field" maxlength="200" rows="2" lang="zh-Hans"></textarea>
+        <label class="field-label" for="edit-book"><span lang="zh-Hans">课本</span> / Book (optional)</label>
+        <input type="text" id="edit-book" class="field" maxlength="40" lang="zh-Hans">
         <label class="field-label" for="edit-author"><span lang="zh-Hans">作者</span> / Author (optional)</label>
         <input type="text" id="edit-author" class="field" maxlength="40" lang="zh-Hans">
         <div class="form-actions">

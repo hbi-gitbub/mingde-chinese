@@ -140,6 +140,18 @@ body {
   letter-spacing: 0.1em;
 }
 
+/* Title of the open uploaded game, right after "…". */
+.nav-current {
+  align-self: center;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+  color: var(--accent);
+}
+
 /* One-line description of the open game. */
 .page-desc {
   margin: 0;
@@ -206,7 +218,7 @@ body {
   width: 30%;
 }
 
-.col-desc {
+.col-book {
   width: 50%;
 }
 
@@ -444,6 +456,7 @@ textarea.field {
 }
 
 .page-row-key,
+.page-row-book,
 .page-row-author,
 .page-row-date {
   color: var(--muted);
@@ -526,7 +539,7 @@ textarea.field {
     width: 32%;
   }
 
-  .col-desc {
+  .col-book {
     width: 43%;
   }
 
