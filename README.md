@@ -42,9 +42,10 @@ this GitHub repo, and GitHub Pages publishes it for every visitor about **1–2 
   used in the link `#key` and in the file name, and can't be changed later. Enter a **title**,
   an optional **description**, an optional **课本 / book** (the textbook) and an optional **author**.
   The form starts filled in with example values (key `rj-2a-3-adventure`, title 中文冒险世界,
-  description 六大魔法关卡，闯关学中文, book 人教语文二年级上册第三课, author 王老师). Change or clear
-  them as needed. Choosing a file replaces the example key with the file name, unless you
-  typed your own key. Uploaded games appear in the contents table (**…**), not as their own
+  description 六大魔法关卡，闯关学中文, book 人教语文二年级上册第三课, author 王老师). Change them as
+  needed, or press **Clear** to empty every field. Choosing a file replaces the example key with the file name, unless you
+  typed your own key. The **Upload** button works only once a token is set and the file, key
+  and title are filled in; hover over it to see what's missing. Uploaded games appear in the contents table (**…**), not as their own
   button. The table shows the book, not the description. Hover over a title to see its description.
   While the game opens, the line under the buttons shows "description · 作者：author". Its title in
   the table shows "（发布中…）" until the page is live.

@@ -50,6 +50,7 @@
   const uploadDesc = byId("upload-desc");
   const uploadBook = byId("upload-book");
   const uploadAuthor = byId("upload-author");
+  const uploadSubmit = uploadForm.querySelector('button[type="submit"]');
   const listNote = byId("list-note");
   const pageList = byId("page-list");
   const editForm = byId("edit-form");
@@ -138,6 +139,24 @@
     dialog.querySelectorAll("button, input, textarea").forEach((control) => {
       if (control !== closeBtn) control.disabled = value;
     });
+    updateUploadButton();
+  }
+
+  // Upload is enabled only with a token and the required fields (file, key, title) filled.
+  // The full checks still run on submit.
+  function updateUploadButton() {
+    let missing = "";
+    if (!token) {
+      missing = "请先在 ① 输入令牌 / Enter a GitHub token in section ① first.";
+    } else if (!uploadFile.files[0]) {
+      missing = "请选择文件 / Choose a file.";
+    } else if (!uploadKey.value.trim()) {
+      missing = "请填写键 / Enter a key.";
+    } else if (!uploadTitle.value.trim()) {
+      missing = "请填写标题 / Enter a title.";
+    }
+    uploadSubmit.disabled = busy || Boolean(missing);
+    uploadSubmit.title = missing;
   }
 
   // ---------- the list of uploaded pages ----------
@@ -589,6 +608,7 @@
     tokenRemember.checked = Boolean(loadSavedToken());
     renderTokenState();
     renderList();
+    updateUploadButton();
     if (!dialog.open) dialog.showModal();
     if (token && !listFromApi) refreshList();
   });
@@ -606,6 +626,7 @@
     token = value;
     saveToken(tokenRemember.checked ? value : "");
     renderTokenState();
+    updateUploadButton();
     refreshList();
   });
 
@@ -624,6 +645,7 @@
     list = siteList();
     renderTokenState();
     renderList();
+    updateUploadButton();
     setStatus("令牌已清除 / Token forgotten.");
   });
 
@@ -652,10 +674,23 @@
       const base = file.name.replace(/\.html?$/i, "");
       if (KEY_PATTERN.test(base) && !RESERVED_KEYS.has(base)) uploadKey.value = base;
     }
+    updateUploadButton();
   });
 
-  uploadForm.addEventListener("reset", () => {
+  // Typing in the key or title, or picking a file.
+  uploadForm.addEventListener("input", updateUploadButton);
+
+  // Clear (and uploadForm.reset()) empties every field, instead of going back to the
+  // example values written in index.html.
+  uploadForm.addEventListener("reset", (event) => {
+    event.preventDefault();
+    uploadFile.value = "";
+    uploadKey.value = "";
+    Object.values(uploadFields).forEach((field) => {
+      field.value = "";
+    });
     uploadNote.hidden = true;
+    updateUploadButton();
   });
 
   uploadForm.addEventListener("submit", (event) => {
@@ -694,6 +729,7 @@
       uploadForm.reset();
       uploadKey.value = page.key;
       fillFields(uploadFields, page);
+      updateUploadButton();
       setStatus(`请选择新文件来替换 “${page.title}” / Choose the new file to replace "${page.title}".`);
       uploadForm.scrollIntoView({ block: "nearest" });
       uploadFile.focus();
@@ -725,4 +761,6 @@
   });
 
   editCancel.addEventListener("click", stopEdit);
+
+  updateUploadButton();
 })();

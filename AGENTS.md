@@ -145,7 +145,10 @@ To add a new **built-in** page (fixed, can't be deleted from the site):
   "Clear filters" shows all again, and clicking a title opens its game (with "…" still highlighted for
   uploaded games, and the game's title right after "…"; the title disappears on `#contents` and the
   built-in games). At 375px the table fits without page-wide horizontal scroll.
-- ⚙ 管理 without a token: the list is visible, and Upload, Edit or Delete asks for a token.
+- ⚙ 管理 without a token: the list is visible, Upload is disabled, and Edit or Delete asks for a token.
+  With a token, Upload stays disabled until a file is chosen and Key and Title are filled
+  (its tooltip says what's missing); clearing any of them disables it again. Clear empties
+  every Upload field (it doesn't bring back the example values).
 - Test uploads with a throwaway key (e.g. `test`) on the live site. Each action makes one commit.
   Its title in the contents table shows "（发布中…）" until it is live. Delete it again afterwards, and `git pull`.
 
