@@ -5,7 +5,7 @@ A small static website of Chinese learning games. It has no build step and no de
 - **中文冒险世界** (`#adventure`): an adventure with six magic levels, plus a teacher mode.
 - **拼音泡泡大作战** (`#bubbles`): a pinyin bubble game with a teacher word-list manager.
 - **目录 / Contents** (`#contents`, the **…** button): a table of the uploaded games (title,
-  课本 / book, author). Click a title to open the game; its title then shows next to the **…** button. Each column header has a drop-down to filter the rows.
+  课本 / book, author). Click a title to open the game; its title then shows next to the **…** button. Each column header has a drop-down to filter the rows, and under it a text box: type part of a title, book or author to filter by text.
 
 ## Run it
 

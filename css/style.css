@@ -255,6 +255,7 @@ body {
 }
 
 .filter {
+  box-sizing: border-box;
   width: 100%;
   min-width: 0;
   padding: 4px 6px;
@@ -265,6 +266,15 @@ body {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 6px;
+}
+
+.filter-text {
+  display: block;
+  margin-top: 4px;
+}
+
+.filter::placeholder {
+  color: var(--muted);
 }
 
 .contents-table a {

@@ -2,7 +2,7 @@
 
 // Main page: shows one game at a time in the iframe, driven by the URL hash.
 // The nav holds the built-in games and a "…" button that opens #contents: a table of the
-// uploaded games with a filter drop-down per column. Uploaded games come from
+// uploaded games with a filter drop-down and a text filter per column. Uploaded games come from
 // js/uploaded-pages.js (window.MINGDE_UPLOADED_PAGES) and from "pages-changed" events sent
 // by js/manage.js.
 (() => {
@@ -31,7 +31,9 @@
   const BOOK_MAX = 40;
   const PUBLISHING_LABEL = "（发布中…）";
   const PUBLISHING_STATUS = "发布中… / Publishing…";
-  // Columns with a filter drop-down; "all" shows every row, "=<value>" only matching rows.
+  // Columns with a filter drop-down and a text box. Drop-down: "all" shows every row,
+  // "=<value>" only matching rows. Text box: rows whose value contains the typed text
+  // (case-insensitive). A row must pass both, in every column.
   const FILTER_COLUMNS = ["title", "book", "author"];
   const FILTER_ALL = "all";
   const OPTION_TEXT_MAX = 30;
@@ -46,8 +48,10 @@
   const contentsEmpty = document.getElementById("contents-empty");
   const filtersClear = document.getElementById("filters-clear");
   const filterSelects = {};
+  const filterInputs = {};
   FILTER_COLUMNS.forEach((column) => {
     filterSelects[column] = contentsView.querySelector(`select[data-filter="${column}"]`);
+    filterInputs[column] = contentsView.querySelector(`input[data-filter-text="${column}"]`);
   });
   let frame = document.getElementById("content");
 
@@ -159,11 +163,16 @@
 
   // ---------- contents table ----------
 
+  function normalize(text) {
+    return text.trim().toLocaleLowerCase();
+  }
+
   function shorten(text) {
     return text.length > OPTION_TEXT_MAX ? `${text.slice(0, OPTION_TEXT_MAX)}…` : text;
   }
 
   // Refill each drop-down with the values in its column; keep the choice if it still exists.
+  // The typed text is left as it is.
   function renderFilterOptions(rows) {
     FILTER_COLUMNS.forEach((column) => {
       const select = filterSelects[column];
@@ -213,12 +222,16 @@
   function renderRows() {
     const rows = uploaded;
     const chosen = {};
+    const typed = {};
     FILTER_COLUMNS.forEach((column) => {
       chosen[column] = filterSelects[column].value || FILTER_ALL;
+      typed[column] = normalize(filterInputs[column].value);
     });
     const shown = rows.filter((row) =>
       FILTER_COLUMNS.every(
-        (column) => chosen[column] === FILTER_ALL || chosen[column] === `=${row[column]}`,
+        (column) =>
+          (chosen[column] === FILTER_ALL || chosen[column] === `=${row[column]}`) &&
+          (!typed[column] || normalize(row[column]).includes(typed[column])),
       ),
     );
     contentsBody.replaceChildren(
@@ -234,7 +247,9 @@
         ? "还没有上传的游戏 / No uploaded games yet."
         : "没有符合筛选条件的游戏 / No games match the filters.";
     contentsEmpty.hidden = shown.length > 0;
-    filtersClear.disabled = FILTER_COLUMNS.every((column) => chosen[column] === FILTER_ALL);
+    filtersClear.disabled = FILTER_COLUMNS.every(
+      (column) => chosen[column] === FILTER_ALL && !typed[column],
+    );
   }
 
   function renderContents() {
@@ -339,9 +354,15 @@
     if (event.target.matches("select[data-filter]")) renderRows();
   });
 
+  // "input" fires on each keystroke and on the search box's ✕.
+  contentsView.addEventListener("input", (event) => {
+    if (event.target.matches("input[data-filter-text]")) renderRows();
+  });
+
   filtersClear.addEventListener("click", () => {
     FILTER_COLUMNS.forEach((column) => {
       filterSelects[column].value = FILTER_ALL;
+      filterInputs[column].value = "";
     });
     renderRows();
   });

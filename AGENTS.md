@@ -7,7 +7,7 @@ Rules for any AI coding agent (Codex, Cursor, Copilot, Claude, and others) worki
 (`index.html`) shows one game at a time inside an iframe: 中文冒险世界 (an adventure with six
 levels) and 拼音泡泡大作战 (a pinyin bubble game with a teacher word-list manager). The nav
 shows only these two plus a "…" button that opens the contents page (`#contents`): a table of
-the uploaded games with a filter drop-down per column. A teacher
+the uploaded games with a filter drop-down and a text filter per column. A teacher
 can also upload, replace, edit and delete more game pages from the site itself (⚙ 管理). Those
 changes are committed to this GitHub repo through the GitHub API. It uses plain HTML, CSS and
 JavaScript, with no build step and no framework.
@@ -52,8 +52,10 @@ CLAUDE.md                 Claude Code notes (points here)
   (emptied, so game sound stops) and shows `#contents-view`: a table, built by `main.js`, with
   the columns Title, 课本/Book and Author (the description is not a column; it shows in the
   title's tooltip and in `#page-desc`). It lists only the uploaded games (the built-in
-  ones have their own nav buttons); with none, it says "还没有上传的游戏". The header row holds a `<select data-filter="…">` for each column, with
-  "全部 / All" plus every value in that column. Rows must match every chosen filter. Each title
+  ones have their own nav buttons); with none, it says "还没有上传的游戏". The header row holds, for each column, a `<select data-filter="…">` with
+  "全部 / All" plus every value in that column, and under it an
+  `<input type="search" data-filter-text="…">`. A row is shown only when, in every column, it
+  matches the chosen drop-down value and its value contains the typed text (case-insensitive). Each title
   is a link (`href="#<key>"`, the HTML file name as its tooltip). While a game is still
   publishing, its title is plain text followed by "（发布中…）". The "…" button is marked active on
   `#contents` and on uploaded games. While an uploaded game is open, its title is shown right after
@@ -141,8 +143,9 @@ To add a new **built-in** page (fixed, can't be deleted from the site):
   The header stays on one row with ⚙ 管理 at the right end. The open dialog fits the screen.
 - Each game shows its description under the nav, followed by "· 作者：…" when it has an author.
 - "…" opens `#contents`: the table lists every uploaded game and no built-in one, with the columns
-  Title, 课本/Book and Author. Hovering a title shows its description. Each filter drop-down narrows the rows,
-  "Clear filters" shows all again, and clicking a title opens its game (with "…" still highlighted for
+  Title, 课本/Book and Author. Hovering a title shows its description. Each filter drop-down narrows the rows, and
+  so does typing part of a value in the text box under it (rows narrow as you type; both together
+  must match). "Clear filters" resets the drop-downs, empties the boxes and shows all again, and clicking a title opens its game (with "…" still highlighted for
   uploaded games, and the game's title right after "…"; the title disappears on `#contents` and the
   built-in games). At 375px the table fits without page-wide horizontal scroll.
 - ⚙ 管理 without a token: the list is visible, Upload is disabled, and Edit or Delete asks for a token.
