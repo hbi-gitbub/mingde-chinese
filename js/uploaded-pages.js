@@ -6,7 +6,7 @@ window.MINGDE_UPLOADED_PAGES = [
     "title": "中文冒险世界",
     "description": "六大魔法关卡，闯关学中文",
     "book": "人教语文二年级上册第三课",
-    "author": "邹老师",
-    "updated": "2026-11-13T11:42:29Z"
+    "author": "王老师",
+    "updated": "2026-11-13T11:43:07Z"
   }
 ];
