@@ -7,7 +7,7 @@ Rules for any AI coding agent (Codex, Cursor, Copilot, Claude, and others) worki
 (`index.html`) shows one game at a time inside an iframe: 中文冒险世界 (an adventure with six
 levels) and 拼音泡泡大作战 (a pinyin bubble game with a teacher word-list manager). The nav
 shows only these two plus a "…" button that opens the contents page (`#contents`): a grid of
-thumbnail cards for the uploaded games, under a filter bar (field → value → text) whose filters add up. A teacher
+thumbnail cards for the uploaded games, under a filter bar (field → value, or a keyword) whose filters add up. A teacher
 can also upload, replace, edit and delete more game pages from the site itself (⚙ 管理). Those
 changes are committed to this GitHub repo through the GitHub API. It uses plain HTML, CSS and
 JavaScript, with no build step and no framework.
@@ -53,15 +53,17 @@ CLAUDE.md                 Claude Code notes (points here)
   (emptied, so game sound stops) and shows `#contents-view`: a filter bar and a grid of cards
   (`#contents-grid`), both built by `main.js`. It lists only the uploaded games (the built-in
   ones have their own nav buttons); with none, it says "还没有上传的游戏".
-  - Filter bar: three controls. `#filter-field` picks a field (Title, 教材/Textbook, 册/Volume,
-    课/Lesson, Author; default Title). `#filter-value` has "全部 / All" plus the values of that field
-    found in the games that pass the other fields' filters and this field's text (the chosen value
-    always stays listed). `#filter-text` is text the field must contain (case-insensitive; a lesson
-    matches `3` and 第三课). Each field keeps its own value and text in `criteria`, so filters on
-    different fields add up: a card is shown only when it passes the value and the text of every
-    field. Switching the field shows that field's saved settings. `#filter-active` lists each filter
-    that is set as a button ("作者 = 王老师 ✕", "课 包含 “3” ✕") that removes it. "Clear filters"
-    resets everything. Filters are not kept across a reload.
+  - Filter bar: `#filter-field` picks a field (Title, 教材/Textbook, 册/Volume, 课/Lesson, Author,
+    关键词/Text; default Title), and next to it is that field's control. For the first five it is
+    `#filter-value`: "全部 / All" plus the values of that field found in the games that pass the
+    other fields' values and the keyword (the chosen value always stays listed). For 关键词/Text
+    (`KEYWORD_FIELD`) it is `#filter-text` instead (only one of the two is shown): one keyword that
+    the title, description, textbook, volume, lesson or author must contain (case-insensitive; a
+    lesson matches `3` and 第三课). Each field keeps its own value in `criteria`, and the keyword is
+    kept apart, so the filters add up: a card is shown only when it passes the value of every field
+    and the keyword. Switching the field shows that field's saved setting. `#filter-active` lists
+    each filter that is set as a button ("作者 = 王老师 ✕", "关键词 包含 “3” ✕") that removes it.
+    "Clear filters" resets everything. Filters are not kept across a reload.
   - Card: a link (`href="#<key>"`) with a 4:3 thumbnail and the title under it, nothing else. Its
     tooltip holds the description, "textbook · volume · lesson", "作者：author" and the HTML file
     name. The thumbnail is `pages/uploads/<key>.<thumb>?v=<updated>` (no `?v` under `file://`).
@@ -177,16 +179,18 @@ To add a new **built-in** page (fixed, can't be deleted from the site):
 - "…" opens `#contents`: a card for every uploaded game and none for the built-in ones, each with
   a thumbnail (the picture, or a colored tile with the title's first character) and only the title.
   Hovering a card shows its description, textbook · volume · lesson and author. The filter bar has
-  Field (Title, 教材/Textbook, 册/Volume, 课/Lesson, Author), Value and Text. Pick Field = Author
-  and a value: the cards narrow and "作者 = … ✕" appears under the bar. Switch Field to Lesson: the
-  values show as 第三课, sort by number and are only that author's lessons; typing `3` or 三 narrows
-  the cards (as you type) to that author's lesson 3, and the Value list shrinks too. Switching back
-  to Author still shows the chosen author. ✕ on one button removes only that filter. "Clear
-  filters" resets everything (Field back to Title) and shows all again; it is disabled when nothing
-  is set. Clicking a card opens its game (with "…" still highlighted for uploaded games, and the
-  game's title right after "…"; the title disappears on `#contents` and the built-in games). At
-  375px Field and Value share a row with the text box full width under them, the cards are 2 per
-  row, and there's no horizontal scroll.
+  Field (Title, 教材/Textbook, 册/Volume, 课/Lesson, Author, 关键词/Text) and, next to it, Value.
+  Pick Field = Author and a value: the cards narrow and "作者 = … ✕" appears under the bar. Switch
+  Field to Lesson: the values show as 第三课, sort by number and are only that author's lessons.
+  Switch Field to 关键词/Text: Value is replaced by a text box; typing `3` or 三 narrows the cards
+  (as you type) to that author's lesson 3 (a word from a description works too), and
+  "关键词 包含 “3” ✕" appears. Back on Lesson, the Value list has shrunk to match. Switching back
+  to Author still shows the chosen author, and back to 关键词 still shows the typed text. ✕ on one
+  button removes only that filter. "Clear filters" resets everything (Field back to Title) and
+  shows all again; it is disabled when nothing is set. Clicking a card opens its game (with "…"
+  still highlighted for uploaded games, and the game's title right after "…"; the title disappears
+  on `#contents` and the built-in games). At 375px Field and Value (or the text box) share a row,
+  the cards are 2 per row, and there's no horizontal scroll.
 - Pictures: upload a game with a picture and its card shows it; Replace without choosing a picture
   keeps it; Edit with a new `.jpg` replaces a `.png` (the old file is gone in that commit); Edit →
   "Remove the picture" brings back the tile; Delete removes both files. A `.gif` or a picture over

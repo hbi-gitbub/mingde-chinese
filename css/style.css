@@ -215,10 +215,10 @@ body {
   flex: 1;
 }
 
-/* Three groups: field, value, text (on a phone: field + value, then text under them). */
+/* Two groups: the field, then its value drop-down or the keyword box (only one is shown). */
 .filter-bar {
   display: grid;
-  grid-template-columns: minmax(7rem, 11rem) minmax(9rem, 1fr) minmax(9rem, 1fr);
+  grid-template-columns: minmax(7rem, 11rem) minmax(9rem, 28rem);
   gap: 10px 12px;
   margin-bottom: 16px;
   padding: 12px;
@@ -662,10 +662,6 @@ textarea.field {
   .filter-bar {
     grid-template-columns: 1fr 1fr;
     padding: 10px;
-  }
-
-  .filter-group-text {
-    grid-column: 1 / -1;
   }
 
   .card-grid {

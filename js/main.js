@@ -2,7 +2,7 @@
 
 // Main page: shows one game at a time in the iframe, driven by the URL hash.
 // The nav holds the built-in games and a "…" button that opens #contents: a grid of thumbnail
-// cards for the uploaded games, under a filter bar (field, value, text) whose filters add up.
+// cards for the uploaded games, under a filter bar (field → value, or a keyword) whose filters add up.
 // Uploaded games come from
 // js/uploaded-pages.js (window.MINGDE_UPLOADED_PAGES) and from "pages-changed" events sent
 // by js/manage.js.
@@ -39,11 +39,13 @@
   const TILE_COUNT = 6;
   const PUBLISHING_LABEL = "（发布中…）";
   const PUBLISHING_STATUS = "发布中… / Publishing…";
-  // Filter bar: pick a field, then a value of it ("all", or "=<value>" for matching rows only)
-  // and/or text its value must contain (case-insensitive). Each field keeps its own value and
-  // text, and a row must pass them in every field.
+  // Filter bar: pick a field, then one of its values ("all", or "=<value>" for matching rows
+  // only). Each field keeps its own value, and a row must match them all. The extra field
+  // KEYWORD_FIELD ("关键词 / Text") shows a text box instead: text that the title, description,
+  // textbook, volume, lesson or author must contain (case-insensitive).
   const FILTER_COLUMNS = ["title", "textbook", "volume", "lesson", "author"];
-  const FIELD_NAMES = { title: "标题", textbook: "教材", volume: "册", lesson: "课", author: "作者" };
+  const KEYWORD_FIELD = "text";
+  const FIELD_NAMES = { title: "标题", textbook: "教材", volume: "册", lesson: "课", author: "作者", text: "关键词" };
   const FILTER_ALL = "all";
   const OPTION_TEXT_MAX = 30;
 
@@ -59,9 +61,12 @@
   const filterField = document.getElementById("filter-field");
   const filterValue = document.getElementById("filter-value");
   const filterText = document.getElementById("filter-text");
+  const valueGroup = filterValue.closest(".filter-group");
+  const textGroup = filterText.closest(".filter-group");
   const filterActive = document.getElementById("filter-active");
-  // Per field: the chosen drop-down value and the typed text (as typed, not normalized).
+  // Per field: the chosen drop-down value. Plus one keyword (as typed, not normalized).
   const criteria = {};
+  let keyword = "";
   let frame = document.getElementById("content");
 
   let pages = { ...BUILTIN_PAGES };
@@ -216,10 +221,10 @@
     return column === "lesson" && value ? lessonLabel(Number(value)) : value;
   }
 
-  // What the text box searches: the lesson matches both "3" and "第三课".
-  function columnSearchText(row, column) {
-    if (column === "lesson") return row.lesson === null ? "" : `${row.lesson} ${lessonLabel(row.lesson)}`;
-    return row[column];
+  // What the keyword searches: all of a game's text. The lesson matches both "3" and "第三课".
+  function searchText(row) {
+    const lesson = row.lesson === null ? "" : `${row.lesson} ${lessonLabel(row.lesson)}`;
+    return [row.title, row.description, row.textbook, row.volume, lesson, row.author].join("\n");
   }
 
   // Empty first, then lessons by number and text in Chinese order.
@@ -230,42 +235,47 @@
 
   function resetCriteria() {
     FILTER_COLUMNS.forEach((column) => {
-      criteria[column] = { value: FILTER_ALL, text: "" };
+      criteria[column] = FILTER_ALL;
     });
+    keyword = "";
   }
 
-  function isSet(column) {
-    return criteria[column].value !== FILTER_ALL || normalize(criteria[column].text) !== "";
+  function anySet() {
+    return FILTER_COLUMNS.some((column) => criteria[column] !== FILTER_ALL) || normalize(keyword) !== "";
   }
 
-  function currentColumn() {
-    return FILTER_COLUMNS.includes(filterField.value) ? filterField.value : "title";
+  // The chosen field: one of FILTER_COLUMNS, or KEYWORD_FIELD.
+  function currentField() {
+    const field = filterField.value;
+    return field === KEYWORD_FIELD || FILTER_COLUMNS.includes(field) ? field : "title";
   }
 
   function passesValue(row, column) {
-    const value = criteria[column].value;
+    const value = criteria[column];
     return value === FILTER_ALL || value === `=${columnValue(row, column)}`;
   }
 
-  function passesText(row, column) {
-    const typed = normalize(criteria[column].text);
-    return !typed || normalize(columnSearchText(row, column)).includes(typed);
+  function passesKeyword(row) {
+    const typed = normalize(keyword);
+    return !typed || normalize(searchText(row)).includes(typed);
   }
 
-  // A row passes when it matches the value and the text of every field (except skipColumn).
+  // A row passes when it matches the keyword and the value of every field (except skipColumn).
   function passes(row, skipColumn) {
-    return FILTER_COLUMNS.every(
-      (column) => column === skipColumn || (passesValue(row, column) && passesText(row, column)),
+    return (
+      passesKeyword(row) &&
+      FILTER_COLUMNS.every((column) => column === skipColumn || passesValue(row, column))
     );
   }
 
   // Refill the value drop-down for the current field: the values of the games that pass the
-  // other fields' filters and this field's text. The chosen value always stays in the list,
+  // other fields' values and the keyword. The chosen value always stays in the list,
   // so a filter is never dropped without the teacher seeing it.
   function renderValueOptions() {
-    const column = currentColumn();
-    const chosen = criteria[column].value;
-    const rows = uploaded.filter((row) => passes(row, column) && passesText(row, column));
+    const column = currentField();
+    if (column === KEYWORD_FIELD) return;
+    const chosen = criteria[column];
+    const rows = uploaded.filter((row) => passes(row, column));
     const values = new Set(rows.map((row) => columnValue(row, column)));
     if (chosen !== FILTER_ALL) values.add(chosen.slice(1));
     const options = [new Option("全部 / All", FILTER_ALL)];
@@ -281,20 +291,22 @@
     filterValue.value = chosen;
   }
 
-  // Show the current field's saved value and text in the controls.
+  // Show the chosen field's control: its value drop-down (with the saved value), or the keyword box.
   function syncControls() {
-    const column = currentColumn();
-    filterField.value = column;
-    filterText.value = criteria[column].text;
+    const field = currentField();
+    const isKeyword = field === KEYWORD_FIELD;
+    filterField.value = field;
+    valueGroup.hidden = isKeyword;
+    textGroup.hidden = !isKeyword;
+    filterText.value = keyword;
     renderValueOptions();
   }
 
-  function activeButton(column, kind, text) {
+  function activeButton(field, text) {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "filter-chip";
-    button.dataset.column = column;
-    button.dataset.kind = kind;
+    button.dataset.field = field;
     button.title = "移除这个筛选 / Remove this filter";
     const label = document.createElement("span");
     label.lang = "zh-Hans";
@@ -307,19 +319,18 @@
     return button;
   }
 
-  // One button per filter that is set, e.g. "作者 = 王老师 ✕" or "课 包含 “3” ✕".
+  // One button per filter that is set, e.g. "作者 = 王老师 ✕" or "关键词 包含 “3” ✕".
   function renderActive() {
     const buttons = [];
     FILTER_COLUMNS.forEach((column) => {
-      const { value, text } = criteria[column];
-      if (value !== FILTER_ALL) {
-        const label = columnLabel(value.slice(1), column) || "（空）";
-        buttons.push(activeButton(column, "value", `${FIELD_NAMES[column]} = ${label}`));
-      }
-      if (normalize(text)) {
-        buttons.push(activeButton(column, "text", `${FIELD_NAMES[column]} 包含 “${text.trim()}”`));
-      }
+      const value = criteria[column];
+      if (value === FILTER_ALL) return;
+      const label = columnLabel(value.slice(1), column) || "（空）";
+      buttons.push(activeButton(column, `${FIELD_NAMES[column]} = ${label}`));
     });
+    if (normalize(keyword)) {
+      buttons.push(activeButton(KEYWORD_FIELD, `${FIELD_NAMES[KEYWORD_FIELD]} 包含 “${keyword.trim()}”`));
+    }
     filterActive.replaceChildren(...buttons);
     filterActive.hidden = buttons.length === 0;
   }
@@ -403,7 +414,7 @@
         ? "还没有上传的游戏 / No uploaded games yet."
         : "没有符合筛选条件的游戏 / No games match the filters.";
     contentsEmpty.hidden = shown.length > 0;
-    filtersClear.disabled = !FILTER_COLUMNS.some(isSet);
+    filtersClear.disabled = !anySet();
     renderActive();
   }
 
@@ -505,28 +516,30 @@
     window.location.hash = btn.dataset.page;
   });
 
-  // Switching the field shows that field's saved filters; nothing is reset.
+  // Switching the field shows that field's saved value (or the keyword); nothing is reset.
   filterField.addEventListener("change", syncControls);
 
   filterValue.addEventListener("change", () => {
-    criteria[currentColumn()].value = filterValue.value || FILTER_ALL;
+    const column = currentField();
+    if (column === KEYWORD_FIELD) return;
+    criteria[column] = filterValue.value || FILTER_ALL;
     renderRows();
   });
 
   // "input" fires on each keystroke and on the search box's ✕.
   filterText.addEventListener("input", () => {
-    criteria[currentColumn()].text = filterText.value;
-    renderValueOptions();
+    keyword = filterText.value;
     renderRows();
   });
 
   // A button in the active-filter line removes just that filter.
   filterActive.addEventListener("click", (event) => {
-    const button = event.target.closest("button[data-column]");
-    if (!button || !FILTER_COLUMNS.includes(button.dataset.column)) return;
-    const entry = criteria[button.dataset.column];
-    if (button.dataset.kind === "value") entry.value = FILTER_ALL;
-    else entry.text = "";
+    const button = event.target.closest("button[data-field]");
+    if (!button) return;
+    const field = button.dataset.field;
+    if (field === KEYWORD_FIELD) keyword = "";
+    else if (FILTER_COLUMNS.includes(field)) criteria[field] = FILTER_ALL;
+    else return;
     syncControls();
     renderRows();
   });
@@ -543,7 +556,7 @@
   // Start clean (a reload can restore old form values into the controls).
   resetCriteria();
   filterField.value = "title";
-  filterText.value = "";
+  syncControls();
   setUploaded(cleanList(window.MINGDE_UPLOADED_PAGES));
   const startKey = window.location.hash.slice(1);
   if (startKey && !pageFromHash() && KEY_PATTERN.test(startKey)) {
