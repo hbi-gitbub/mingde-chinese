@@ -7,9 +7,10 @@ A small static website of Chinese learning games. It has no build step and no de
 - **目录 / Contents** (`#contents`, the **…** button): a card for each uploaded game, showing its
   thumbnail picture (or a colored tile with the title's first character) and its title. Hover over a
   card to see its description, textbook, volume, lesson and author. Click a card to open the game;
-  its title then shows next to the **…** button. Above the cards, each field (title, 教材 / textbook,
-  册 / volume, 课 / lesson, author) has a drop-down and a text box to filter the cards (a lesson
-  matches both `3` and 第三课).
+  its title then shows next to the **…** button. Above the cards, pick a field (title, 教材 /
+  textbook, 册 / volume, 课 / lesson, author), then one of its values and/or text it must contain
+  (a lesson matches both `3` and 第三课). Filters on different fields add up, e.g. one author's
+  lesson 3. The filters that are set are listed under the bar; click ✕ on one to remove it.
 
 ## Run it
 

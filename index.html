@@ -38,31 +38,25 @@
       </div>
       <div class="filter-bar" role="group" aria-label="筛选 / Filters">
         <div class="filter-group">
-          <label class="filter-name" for="filter-title"><span lang="zh-Hans">标题</span> / Title</label>
-          <select id="filter-title" class="filter" data-filter="title"></select>
-          <input type="search" class="filter filter-text" data-filter-text="title" placeholder="输入筛选… / Type to filter…" autocomplete="off" aria-label="输入标题筛选 / Type to filter by title">
+          <label class="filter-name" for="filter-field"><span lang="zh-Hans">筛选项</span> / Field</label>
+          <select id="filter-field" class="filter">
+            <option value="title">标题 / Title</option>
+            <option value="textbook">教材 / Textbook</option>
+            <option value="volume">册 / Volume</option>
+            <option value="lesson">课 / Lesson</option>
+            <option value="author">作者 / Author</option>
+          </select>
         </div>
         <div class="filter-group">
-          <label class="filter-name" for="filter-textbook"><span lang="zh-Hans">教材</span> / Textbook</label>
-          <select id="filter-textbook" class="filter" data-filter="textbook"></select>
-          <input type="search" class="filter filter-text" data-filter-text="textbook" placeholder="输入筛选… / Type to filter…" autocomplete="off" aria-label="输入教材筛选 / Type to filter by textbook">
+          <label class="filter-name" for="filter-value"><span lang="zh-Hans">内容</span> / Value</label>
+          <select id="filter-value" class="filter"></select>
         </div>
-        <div class="filter-group">
-          <label class="filter-name" for="filter-volume"><span lang="zh-Hans">册</span> / Volume</label>
-          <select id="filter-volume" class="filter" data-filter="volume"></select>
-          <input type="search" class="filter filter-text" data-filter-text="volume" placeholder="输入筛选… / Type to filter…" autocomplete="off" aria-label="输入册筛选 / Type to filter by volume">
-        </div>
-        <div class="filter-group">
-          <label class="filter-name" for="filter-lesson"><span lang="zh-Hans">课</span> / Lesson</label>
-          <select id="filter-lesson" class="filter" data-filter="lesson"></select>
-          <input type="search" class="filter filter-text" data-filter-text="lesson" placeholder="输入筛选… / Type to filter…" autocomplete="off" aria-label="输入课筛选 / Type to filter by lesson">
-        </div>
-        <div class="filter-group">
-          <label class="filter-name" for="filter-author"><span lang="zh-Hans">作者</span> / Author</label>
-          <select id="filter-author" class="filter" data-filter="author"></select>
-          <input type="search" class="filter filter-text" data-filter-text="author" placeholder="输入筛选… / Type to filter…" autocomplete="off" aria-label="输入作者筛选 / Type to filter by author">
+        <div class="filter-group filter-group-text">
+          <label class="filter-name" for="filter-text"><span lang="zh-Hans">关键词</span> / Text</label>
+          <input type="search" id="filter-text" class="filter" placeholder="输入筛选… / Type to filter…" autocomplete="off">
         </div>
       </div>
+      <div id="filter-active" class="filter-active" role="group" aria-label="当前筛选 / Active filters" hidden></div>
       <ul id="contents-grid" class="card-grid" aria-label="游戏 / Games"></ul>
       <p id="contents-empty" class="contents-empty" hidden></p>
     </section>

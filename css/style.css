@@ -215,10 +215,10 @@ body {
   flex: 1;
 }
 
-/* One group (name, drop-down, text box) per field; as many per row as fit. */
+/* Three groups: field, value, text (on a phone: field + value, then text under them). */
 .filter-bar {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+  grid-template-columns: minmax(7rem, 11rem) minmax(9rem, 1fr) minmax(9rem, 1fr);
   gap: 10px 12px;
   margin-bottom: 16px;
   padding: 12px;
@@ -252,12 +252,49 @@ body {
   border-radius: 6px;
 }
 
-.filter-text {
-  display: block;
-  margin-top: 4px;
+.filter::placeholder {
+  color: var(--muted);
 }
 
-.filter::placeholder {
+/* The filters that are set, one button each; the filter bar's bottom margin moves here. */
+.filter-active {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+  margin: -8px 0 16px;
+}
+
+.filter-active[hidden] {
+  display: none;
+}
+
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  max-width: 100%;
+  padding: 3px 10px;
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.filter-chip > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.filter-chip:hover {
+  border-color: var(--accent);
+}
+
+.filter-chip-x {
   color: var(--muted);
 }
 
@@ -623,7 +660,12 @@ textarea.field {
   }
 
   .filter-bar {
+    grid-template-columns: 1fr 1fr;
     padding: 10px;
+  }
+
+  .filter-group-text {
+    grid-column: 1 / -1;
   }
 
   .card-grid {
