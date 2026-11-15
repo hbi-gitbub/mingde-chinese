@@ -28,13 +28,16 @@
   const TITLE_MAX = 40;
   const DESC_MAX = 200;
   const AUTHOR_MAX = 40;
-  const BOOK_MAX = 40;
+  const TEXTBOOK_MAX = 40;
+  const VOLUME_MAX = 20;
+  const LESSON_MAX = 999;
+  const CN_DIGITS = "零一二三四五六七八九";
   const PUBLISHING_LABEL = "（发布中…）";
   const PUBLISHING_STATUS = "发布中… / Publishing…";
   // Columns with a filter drop-down and a text box. Drop-down: "all" shows every row,
   // "=<value>" only matching rows. Text box: rows whose value contains the typed text
   // (case-insensitive). A row must pass both, in every column.
-  const FILTER_COLUMNS = ["title", "book", "author"];
+  const FILTER_COLUMNS = ["title", "textbook", "volume", "lesson", "author"];
   const FILTER_ALL = "all";
   const OPTION_TEXT_MAX = 30;
 
@@ -71,6 +74,26 @@
     return typeof value === "string" ? value.trim().slice(0, max) : "";
   }
 
+  // A lesson is a whole number 1–LESSON_MAX, or null when not set.
+  function cleanLesson(value) {
+    return Number.isInteger(value) && value >= 1 && value <= LESSON_MAX ? value : null;
+  }
+
+  // 3 → "三", 12 → "十二", 25 → "二十五"; 100 and up stay as digits.
+  function chineseNumber(n) {
+    if (n < 10) return CN_DIGITS[n];
+    if (n < 100) {
+      const tens = Math.floor(n / 10);
+      const ones = n % 10;
+      return `${tens > 1 ? CN_DIGITS[tens] : ""}十${ones ? CN_DIGITS[ones] : ""}`;
+    }
+    return String(n);
+  }
+
+  function lessonLabel(lesson) {
+    return lesson === null ? "" : `第${chineseNumber(lesson)}课`;
+  }
+
   // Keep only well-formed entries; the list is written by the site but is still input.
   function cleanList(raw) {
     const result = [];
@@ -87,7 +110,10 @@
         key,
         title: title.trim(),
         description: cleanText(entry.description, DESC_MAX),
-        book: cleanText(entry.book, BOOK_MAX),
+        // Older entries have a single "book" text instead; show it as the textbook.
+        textbook: cleanText(hasOwn(entry, "textbook") ? entry.textbook : entry.book, TEXTBOOK_MAX),
+        volume: cleanText(entry.volume, VOLUME_MAX),
+        lesson: cleanLesson(entry.lesson),
         author: cleanText(entry.author, AUTHOR_MAX),
       });
     });
@@ -171,19 +197,43 @@
     return text.length > OPTION_TEXT_MAX ? `${text.slice(0, OPTION_TEXT_MAX)}…` : text;
   }
 
+  // The value a drop-down matches on: the text, or the lesson number as text ("" when empty).
+  function columnValue(row, column) {
+    if (column === "lesson") return row.lesson === null ? "" : String(row.lesson);
+    return row[column];
+  }
+
+  // What the table cell and the drop-down show.
+  function columnLabel(value, column) {
+    return column === "lesson" && value ? lessonLabel(Number(value)) : value;
+  }
+
+  // What the text box searches: the lesson matches both "3" and "第三课".
+  function columnSearchText(row, column) {
+    if (column === "lesson") return row.lesson === null ? "" : `${row.lesson} ${lessonLabel(row.lesson)}`;
+    return row[column];
+  }
+
+  // Empty first, then lessons by number and text in Chinese order.
+  function compareValues(a, b, column) {
+    if (column === "lesson") return (a ? Number(a) : 0) - (b ? Number(b) : 0);
+    return a.localeCompare(b, "zh-Hans");
+  }
+
   // Refill each drop-down with the values in its column; keep the choice if it still exists.
   // The typed text is left as it is.
   function renderFilterOptions(rows) {
     FILTER_COLUMNS.forEach((column) => {
       const select = filterSelects[column];
       const previous = select.value || FILTER_ALL;
-      const values = [...new Set(rows.map((row) => row[column]))].sort((a, b) =>
-        a.localeCompare(b, "zh-Hans"),
+      const values = [...new Set(rows.map((row) => columnValue(row, column)))].sort((a, b) =>
+        compareValues(a, b, column),
       );
       const options = [new Option("全部 / All", FILTER_ALL)];
       values.forEach((value) => {
-        const option = new Option(value ? shorten(value) : "（空）/ (empty)", `=${value}`);
-        if (value) option.title = value;
+        const label = columnLabel(value, column);
+        const option = new Option(label ? shorten(label) : "（空）/ (empty)", `=${value}`);
+        if (label) option.title = label;
         options.push(option);
       });
       select.replaceChildren(...options);
@@ -230,14 +280,20 @@
     const shown = rows.filter((row) =>
       FILTER_COLUMNS.every(
         (column) =>
-          (chosen[column] === FILTER_ALL || chosen[column] === `=${row[column]}`) &&
-          (!typed[column] || normalize(row[column]).includes(typed[column])),
+          (chosen[column] === FILTER_ALL || chosen[column] === `=${columnValue(row, column)}`) &&
+          (!typed[column] || normalize(columnSearchText(row, column)).includes(typed[column])),
       ),
     );
     contentsBody.replaceChildren(
       ...shown.map((row) => {
         const tr = document.createElement("tr");
-        tr.append(titleCell(row), cell(row.book, "zh-Hans"), cell(row.author, "zh-Hans"));
+        tr.append(
+          titleCell(row),
+          cell(row.textbook, "zh-Hans"),
+          cell(row.volume, "zh-Hans"),
+          cell(lessonLabel(row.lesson), "zh-Hans"),
+          cell(row.author, "zh-Hans"),
+        );
         return tr;
       }),
     );

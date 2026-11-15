@@ -215,11 +215,19 @@ body {
 }
 
 .col-title {
-  width: 30%;
+  width: 28%;
 }
 
-.col-book {
-  width: 50%;
+.col-textbook {
+  width: 20%;
+}
+
+.col-volume {
+  width: 18%;
+}
+
+.col-lesson {
+  width: 14%;
 }
 
 .col-author {
@@ -527,7 +535,10 @@ textarea.field {
     padding: 12px 8px;
   }
 
+  /* Five columns don't fit a phone: the table keeps a minimum width and scrolls sideways
+     inside .table-wrap, so the page itself never scrolls sideways. */
   .contents-table {
+    min-width: 34rem;
     font-size: 0.85rem;
   }
 
@@ -543,17 +554,5 @@ textarea.field {
 
   .th-name {
     font-size: 0.8rem;
-  }
-
-  .col-title {
-    width: 32%;
-  }
-
-  .col-book {
-    width: 43%;
-  }
-
-  .col-author {
-    width: 25%;
   }
 }

@@ -22,7 +22,10 @@
   const TITLE_MAX = 40;
   const DESC_MAX = 200;
   const AUTHOR_MAX = 40;
-  const BOOK_MAX = 40;
+  const TEXTBOOK_MAX = 40;
+  const VOLUME_MAX = 20;
+  const LESSON_MAX = 999;
+  const CN_DIGITS = "零一二三四五六七八九";
   const TOKEN_STORAGE_KEY = "mingde.githubToken";
   const POLL_INTERVAL_MS = 10 * 1000;
   const POLL_LIMIT_MS = 5 * 60 * 1000;
@@ -48,7 +51,9 @@
   const uploadKey = byId("upload-key");
   const uploadTitle = byId("upload-title");
   const uploadDesc = byId("upload-desc");
-  const uploadBook = byId("upload-book");
+  const uploadTextbook = byId("upload-textbook");
+  const uploadVolume = byId("upload-volume");
+  const uploadLesson = byId("upload-lesson");
   const uploadAuthor = byId("upload-author");
   const uploadSubmit = uploadForm.querySelector('button[type="submit"]');
   const listNote = byId("list-note");
@@ -57,14 +62,30 @@
   const editHeading = byId("edit-heading");
   const editTitle = byId("edit-title");
   const editDesc = byId("edit-desc");
-  const editBook = byId("edit-book");
+  const editTextbook = byId("edit-textbook");
+  const editVolume = byId("edit-volume");
+  const editLesson = byId("edit-lesson");
   const editAuthor = byId("edit-author");
   const editCancel = byId("edit-cancel");
   const statusEl = byId("manage-status");
 
-  // The text fields of each form, by entry property.
-  const uploadFields = { title: uploadTitle, description: uploadDesc, book: uploadBook, author: uploadAuthor };
-  const editFields = { title: editTitle, description: editDesc, book: editBook, author: editAuthor };
+  // The fields of each form, by entry property (in the order they are saved).
+  const uploadFields = {
+    title: uploadTitle,
+    description: uploadDesc,
+    textbook: uploadTextbook,
+    volume: uploadVolume,
+    lesson: uploadLesson,
+    author: uploadAuthor,
+  };
+  const editFields = {
+    title: editTitle,
+    description: editDesc,
+    textbook: editTextbook,
+    volume: editVolume,
+    lesson: editLesson,
+    author: editAuthor,
+  };
 
   // Keys that uploaded pages may not use: the built-in games, "contents" and "manage".
   const RESERVED_KEYS = new Set(["contents", "manage"]);
@@ -119,6 +140,30 @@
 
   function pagePath(key) {
     return `${UPLOAD_DIR}/${key}.html`;
+  }
+
+  function cleanText(value, max) {
+    return typeof value === "string" ? value.trim().slice(0, max) : "";
+  }
+
+  // A lesson is a whole number 1–LESSON_MAX, or null when not set.
+  function cleanLesson(value) {
+    return Number.isInteger(value) && value >= 1 && value <= LESSON_MAX ? value : null;
+  }
+
+  // 3 → "三", 12 → "十二", 25 → "二十五"; 100 and up stay as digits.
+  function chineseNumber(n) {
+    if (n < 10) return CN_DIGITS[n];
+    if (n < 100) {
+      const tens = Math.floor(n / 10);
+      const ones = n % 10;
+      return `${tens > 1 ? CN_DIGITS[tens] : ""}十${ones ? CN_DIGITS[ones] : ""}`;
+    }
+    return String(n);
+  }
+
+  function lessonLabel(lesson) {
+    return lesson === null ? "" : `第${chineseNumber(lesson)}课`;
   }
 
   function el(tag, className, text) {
@@ -177,9 +222,15 @@
         title: title.trim(),
         description:
           typeof entry.description === "string" ? entry.description.slice(0, DESC_MAX) : "",
-        // Older entries have no book or author.
-        book: typeof entry.book === "string" ? entry.book.trim().slice(0, BOOK_MAX) : "",
-        author: typeof entry.author === "string" ? entry.author.trim().slice(0, AUTHOR_MAX) : "",
+        // Older entries have a single "book" text instead (or nothing): it becomes the textbook,
+        // and the next commit saves it that way.
+        textbook: cleanText(
+          Object.prototype.hasOwnProperty.call(entry, "textbook") ? entry.textbook : entry.book,
+          TEXTBOOK_MAX,
+        ),
+        volume: cleanText(entry.volume, VOLUME_MAX),
+        lesson: cleanLesson(entry.lesson),
+        author: cleanText(entry.author, AUTHOR_MAX),
         updated: typeof entry.updated === "string" ? entry.updated : "",
       });
     });
@@ -369,7 +420,9 @@
 
   // ---------- operations ----------
 
-  async function uploadPage(file, { key, title, description, book, author }) {
+  // `fields` comes from pageFields(): key, title, description, textbook, volume, lesson, author.
+  async function uploadPage(file, fields) {
+    const { key } = fields;
     setStatus("正在读取文件… / Reading the file…");
     const content = await readAsBase64(file);
     setStatus(
@@ -378,7 +431,7 @@
     const blob = await api("git/blobs", "POST", { content, encoding: "base64" });
     setStatus("正在提交… / Committing…");
     return commitChange(async (before) => {
-      const entry = { key, title, description, book, author, updated: nowIso() };
+      const entry = { ...fields, updated: nowIso() };
       const next = before.slice();
       const index = next.findIndex((page) => page.key === key);
       if (index >= 0) {
@@ -394,13 +447,14 @@
     });
   }
 
-  async function editPage({ key, title, description, book, author }) {
+  async function editPage(fields) {
+    const { key } = fields;
     setStatus("正在提交… / Committing…");
     return commitChange(async (before) => {
       const next = before.slice();
       const index = next.findIndex((page) => page.key === key);
       if (index < 0) throw new Error("这个页面已不存在 / This page no longer exists.");
-      next[index] = { ...next[index], title, description, book, author, updated: nowIso() };
+      next[index] = { ...next[index], ...fields, updated: nowIso() };
       return { list: next, message: `Edit page ${key}`, files: [] };
     });
   }
@@ -470,8 +524,22 @@
     if (fields.description.value.trim().length > DESC_MAX) {
       return fail(fields.description, `说明最多 ${DESC_MAX} 个字 / Description: up to ${DESC_MAX} characters.`);
     }
-    if (fields.book.value.trim().length > BOOK_MAX) {
-      return fail(fields.book, `课本最多 ${BOOK_MAX} 个字 / Book: up to ${BOOK_MAX} characters.`);
+    if (fields.textbook.value.trim().length > TEXTBOOK_MAX) {
+      return fail(fields.textbook, `教材最多 ${TEXTBOOK_MAX} 个字 / Textbook: up to ${TEXTBOOK_MAX} characters.`);
+    }
+    if (fields.volume.value.trim().length > VOLUME_MAX) {
+      return fail(fields.volume, `册最多 ${VOLUME_MAX} 个字 / Volume: up to ${VOLUME_MAX} characters.`);
+    }
+    // A number field reports "" for text it can't read (like "abc"); badInput catches that.
+    const lesson = fields.lesson.value.trim();
+    if (
+      fields.lesson.validity.badInput ||
+      (lesson && (!/^\d+$/.test(lesson) || cleanLesson(Number(lesson)) === null))
+    ) {
+      return fail(
+        fields.lesson,
+        `课只能填 1–${LESSON_MAX} 的整数，或留空 / Lesson: a whole number from 1 to ${LESSON_MAX}, or empty.`,
+      );
     }
     if (fields.author.value.trim().length > AUTHOR_MAX) {
       return fail(fields.author, `作者最多 ${AUTHOR_MAX} 个字 / Author: up to ${AUTHOR_MAX} characters.`);
@@ -479,21 +547,25 @@
     return true;
   }
 
-  // Title, description, book and author as typed in a form.
+  // The entry's fields as typed in a form. An empty lesson is saved as null.
   function pageFields(key, fields) {
+    const lesson = fields.lesson.value.trim();
     return {
       key,
       title: fields.title.value.trim(),
       description: fields.description.value.trim(),
-      book: fields.book.value.trim(),
+      textbook: fields.textbook.value.trim(),
+      volume: fields.volume.value.trim(),
+      lesson: lesson ? Number(lesson) : null,
       author: fields.author.value.trim(),
     };
   }
 
-  // Put an entry's title, description, book and author into a form.
+  // Put an entry's fields into a form.
   function fillFields(fields, page) {
     Object.keys(fields).forEach((name) => {
-      fields[name].value = page[name];
+      const value = page[name];
+      fields[name].value = value === null || value === undefined ? "" : String(value);
     });
   }
 
@@ -555,8 +627,10 @@
       desc.lang = "zh-Hans";
       desc.title = page.description;
       info.append(title, el("code", "page-row-key", page.key));
-      if (page.book) {
-        const book = el("span", "page-row-book", `课本：${page.book}`);
+      // "教材：人教语文 · 二年级上册 · 第三课", leaving out the parts that are empty.
+      const bookParts = [page.textbook, page.volume, lessonLabel(page.lesson)].filter(Boolean);
+      if (bookParts.length > 0) {
+        const book = el("span", "page-row-book", `教材：${bookParts.join(" · ")}`);
         book.lang = "zh-Hans";
         info.append(book);
       }

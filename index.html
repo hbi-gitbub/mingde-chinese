@@ -40,7 +40,9 @@
         <table class="contents-table">
           <colgroup>
             <col class="col-title">
-            <col class="col-book">
+            <col class="col-textbook">
+            <col class="col-volume">
+            <col class="col-lesson">
             <col class="col-author">
           </colgroup>
           <thead>
@@ -51,9 +53,19 @@
                 <input type="search" class="filter filter-text" data-filter-text="title" placeholder="输入筛选… / Type to filter…" autocomplete="off" aria-label="输入标题筛选 / Type to filter by title">
               </th>
               <th scope="col">
-                <span class="th-name"><span lang="zh-Hans">课本</span> / Book</span>
-                <select class="filter" data-filter="book" aria-label="按课本筛选 / Filter by book"></select>
-                <input type="search" class="filter filter-text" data-filter-text="book" placeholder="输入筛选… / Type to filter…" autocomplete="off" aria-label="输入课本筛选 / Type to filter by book">
+                <span class="th-name"><span lang="zh-Hans">教材</span> / Textbook</span>
+                <select class="filter" data-filter="textbook" aria-label="按教材筛选 / Filter by textbook"></select>
+                <input type="search" class="filter filter-text" data-filter-text="textbook" placeholder="输入筛选… / Type to filter…" autocomplete="off" aria-label="输入教材筛选 / Type to filter by textbook">
+              </th>
+              <th scope="col">
+                <span class="th-name"><span lang="zh-Hans">册</span> / Volume</span>
+                <select class="filter" data-filter="volume" aria-label="按册筛选 / Filter by volume"></select>
+                <input type="search" class="filter filter-text" data-filter-text="volume" placeholder="输入筛选… / Type to filter…" autocomplete="off" aria-label="输入册筛选 / Type to filter by volume">
+              </th>
+              <th scope="col">
+                <span class="th-name"><span lang="zh-Hans">课</span> / Lesson</span>
+                <select class="filter" data-filter="lesson" aria-label="按课筛选 / Filter by lesson"></select>
+                <input type="search" class="filter filter-text" data-filter-text="lesson" placeholder="输入筛选… / Type to filter…" autocomplete="off" aria-label="输入课筛选 / Type to filter by lesson">
               </th>
               <th scope="col">
                 <span class="th-name"><span lang="zh-Hans">作者</span> / Author</span>
@@ -122,8 +134,17 @@
         <label class="field-label" for="upload-desc"><span lang="zh-Hans">说明</span> / Description (optional)</label>
         <textarea id="upload-desc" class="field" maxlength="200" rows="2" lang="zh-Hans">六大魔法关卡，闯关学中文</textarea>
 
-        <label class="field-label" for="upload-book"><span lang="zh-Hans">课本</span> / Book (optional)</label>
-        <input type="text" id="upload-book" class="field" maxlength="40" lang="zh-Hans" value="人教语文二年级上册第三课">
+        <label class="field-label" for="upload-textbook"><span lang="zh-Hans">教材</span> / Textbook (optional)</label>
+        <input type="text" id="upload-textbook" class="field" maxlength="40" lang="zh-Hans" value="人教语文">
+
+        <label class="field-label" for="upload-volume"><span lang="zh-Hans">册</span> / Volume (optional)</label>
+        <input type="text" id="upload-volume" class="field" maxlength="20" lang="zh-Hans" value="二年级上册">
+
+        <label class="field-label" for="upload-lesson"><span lang="zh-Hans">课</span> / Lesson (optional, 1–999)</label>
+        <input type="number" id="upload-lesson" class="field" min="1" max="999" step="1" inputmode="numeric"
+          value="3" aria-describedby="upload-lesson-hint">
+        <p id="upload-lesson-hint" class="hint"><span lang="zh-Hans">只填数字，3 显示为“第三课”</span>
+          · Numbers only: 3 shows as 第三课</p>
 
         <label class="field-label" for="upload-author"><span lang="zh-Hans">作者</span> / Author (optional)</label>
         <input type="text" id="upload-author" class="field" maxlength="40" lang="zh-Hans" value="王老师">
@@ -146,8 +167,12 @@
         <input type="text" id="edit-title" class="field" maxlength="40" lang="zh-Hans">
         <label class="field-label" for="edit-desc"><span lang="zh-Hans">说明</span> / Description (optional)</label>
         <textarea id="edit-desc" class="field" maxlength="200" rows="2" lang="zh-Hans"></textarea>
-        <label class="field-label" for="edit-book"><span lang="zh-Hans">课本</span> / Book (optional)</label>
-        <input type="text" id="edit-book" class="field" maxlength="40" lang="zh-Hans">
+        <label class="field-label" for="edit-textbook"><span lang="zh-Hans">教材</span> / Textbook (optional)</label>
+        <input type="text" id="edit-textbook" class="field" maxlength="40" lang="zh-Hans">
+        <label class="field-label" for="edit-volume"><span lang="zh-Hans">册</span> / Volume (optional)</label>
+        <input type="text" id="edit-volume" class="field" maxlength="20" lang="zh-Hans">
+        <label class="field-label" for="edit-lesson"><span lang="zh-Hans">课</span> / Lesson (optional, 1–999)</label>
+        <input type="number" id="edit-lesson" class="field" min="1" max="999" step="1" inputmode="numeric">
         <label class="field-label" for="edit-author"><span lang="zh-Hans">作者</span> / Author (optional)</label>
         <input type="text" id="edit-author" class="field" maxlength="40" lang="zh-Hans">
         <div class="form-actions">

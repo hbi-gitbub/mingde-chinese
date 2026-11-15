@@ -5,7 +5,7 @@ A small static website of Chinese learning games. It has no build step and no de
 - **中文冒险世界** (`#adventure`): an adventure with six magic levels, plus a teacher mode.
 - **拼音泡泡大作战** (`#bubbles`): a pinyin bubble game with a teacher word-list manager.
 - **目录 / Contents** (`#contents`, the **…** button): a table of the uploaded games (title,
-  课本 / book, author). Click a title to open the game; its title then shows next to the **…** button. Each column header has a drop-down to filter the rows, and under it a text box: type part of a title, book or author to filter by text.
+  教材 / textbook, 册 / volume, 课 / lesson, author). Click a title to open the game; its title then shows next to the **…** button. Each column header has a drop-down to filter the rows, and under it a text box: type part of a value to filter by text (a lesson matches both `3` and 第三课). On a phone the table scrolls sideways inside its box.
 
 ## Run it
 
@@ -40,16 +40,17 @@ this GitHub repo, and GitHub Pages publishes it for every visitor about **1–2 
 **3. Manage pages.**
 - **Upload:** choose an `.html` file (at most 50 MB). Enter a **key**: a–z, 0–9 and `-`. It is
   used in the link `#key` and in the file name, and can't be changed later. Enter a **title**,
-  an optional **description**, an optional **课本 / book** (the textbook) and an optional **author**.
+  an optional **description**, and optionally the **教材 / textbook** (e.g. 人教语文), the
+  **册 / volume** (e.g. 二年级上册), the **课 / lesson** as a number (3 is shown as 第三课) and the **author**.
   The form starts filled in with example values (key `rj-2a-3-adventure`, title 中文冒险世界,
-  description 六大魔法关卡，闯关学中文, book 人教语文二年级上册第三课, author 王老师). Change them as
+  description 六大魔法关卡，闯关学中文, textbook 人教语文, volume 二年级上册, lesson 3, author 王老师). Change them as
   needed, or press **Clear** to empty every field. Choosing a file replaces the example key with the file name, unless you
   typed your own key. The **Upload** button works only once a token is set and the file, key
   and title are filled in; hover over it to see what's missing. Uploaded games appear in the contents table (**…**), not as their own
-  button. The table shows the book, not the description. Hover over a title to see its description.
+  button. The table shows the textbook, volume and lesson, not the description. Hover over a title to see its description.
   While the game opens, the line under the buttons shows "description · 作者：author". Its title in
   the table shows "（发布中…）" until the page is live.
-- **Edit:** change the title, description, book or author. The file isn't uploaded again.
+- **Edit:** change the title, description, textbook, volume, lesson or author. The file isn't uploaded again.
 - **Replace:** upload a new version of the file under the same key.
 - **Delete:** removes the page and its button.
 - The built-in games (中文冒险世界, 拼音泡泡大作战) can't be changed here.
