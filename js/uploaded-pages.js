@@ -11,16 +11,5 @@ window.MINGDE_UPLOADED_PAGES = [
     "author": "王老师",
     "thumb": "webp",
     "updated": "2026-11-15T11:33:41Z"
-  },
-  {
-    "key": "rj-2a-4-adventure",
-    "title": "拼音泡泡大作战",
-    "description": "打泡泡，练拼音；老师可管理词表",
-    "textbook": "人教语文",
-    "volume": "二年级上册",
-    "lesson": 4,
-    "author": "邹老师",
-    "thumb": "",
-    "updated": "2026-11-15T11:56:19Z"
   }
 ];
