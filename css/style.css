@@ -10,6 +10,14 @@
   --accent-text: #ffffff;
   --ok: #1a7f37;
   --backdrop: rgba(20, 22, 26, 0.45);
+  /* Thumbnail tiles for games without a picture (js/main.js picks one by key). */
+  --tile-text: #ffffff;
+  --tile-0: #b3261e;
+  --tile-1: #1f6feb;
+  --tile-2: #1a7f37;
+  --tile-3: #8250df;
+  --tile-4: #bc4c00;
+  --tile-5: #0f7b8a;
   --font: system-ui, -apple-system, "Segoe UI", Roboto, "Microsoft YaHei", "PingFang SC", sans-serif;
   color-scheme: light dark;
 }
@@ -25,6 +33,13 @@
     --accent-text: #16181c;
     --ok: #57ab5a;
     --backdrop: rgba(0, 0, 0, 0.6);
+    --tile-text: #f5f5f5;
+    --tile-0: #9c2a22;
+    --tile-1: #2357b8;
+    --tile-2: #206b34;
+    --tile-3: #6a46b5;
+    --tile-4: #9c4a10;
+    --tile-5: #146a75;
   }
 }
 
@@ -133,7 +148,7 @@ body {
   border-bottom: 1px solid var(--border);
 }
 
-/* "…" opens the contents table (all games). */
+/* "…" opens the contents page (the uploaded games). */
 .nav-more {
   min-width: 48px;
   font-weight: 700;
@@ -200,65 +215,26 @@ body {
   flex: 1;
 }
 
-.table-wrap {
-  overflow-x: auto;
+/* One group (name, drop-down, text box) per field; as many per row as fit. */
+.filter-bar {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+  gap: 10px 12px;
+  margin-bottom: 16px;
+  padding: 12px;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--surface);
 }
 
-.contents-table {
-  width: 100%;
-  table-layout: fixed;
-  border-collapse: collapse;
-  font-size: 0.95rem;
+.filter-group {
+  min-width: 0;
 }
 
-.col-title {
-  width: 28%;
-}
-
-.col-textbook {
-  width: 20%;
-}
-
-.col-volume {
-  width: 18%;
-}
-
-.col-lesson {
-  width: 14%;
-}
-
-.col-author {
-  width: 20%;
-}
-
-.contents-table th,
-.contents-table td {
-  padding: 8px 10px;
-  text-align: left;
-  vertical-align: top;
-  overflow-wrap: anywhere;
-  border-bottom: 1px solid var(--border);
-}
-
-.contents-table th {
-  background: var(--bg);
-}
-
-.contents-table tbody tr:last-child td {
-  border-bottom: 0;
-}
-
-.contents-table tbody tr:hover {
-  background: var(--bg);
-}
-
-.th-name {
+.filter-name {
   display: block;
   margin-bottom: 4px;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 600;
 }
 
@@ -285,17 +261,83 @@ body {
   color: var(--muted);
 }
 
-.contents-table a {
+/* Thumbnail cards: as many per row as fit (2 on a phone). */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  color: var(--text);
+  text-decoration: none;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+a.card:hover {
+  border-color: var(--accent);
+}
+
+a.card:hover .card-title {
   color: var(--accent);
 }
 
-.contents-pending {
+.card-thumb {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+
+.card-thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.card-tile {
+  font-size: 3rem;
+  font-weight: 700;
+  color: var(--tile-text);
+}
+
+.card-tile[data-tile="0"] { background: var(--tile-0); }
+.card-tile[data-tile="1"] { background: var(--tile-1); }
+.card-tile[data-tile="2"] { background: var(--tile-2); }
+.card-tile[data-tile="3"] { background: var(--tile-3); }
+.card-tile[data-tile="4"] { background: var(--tile-4); }
+.card-tile[data-tile="5"] { background: var(--tile-5); }
+
+.card-title {
+  padding: 8px 10px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+/* Still publishing: not a link yet. */
+.card-pending {
   color: var(--muted);
+}
+
+.card-pending .card-thumb {
+  opacity: 0.6;
 }
 
 .contents-empty {
   margin: 0;
-  padding: 16px;
+  padding: 16px 0;
   color: var(--muted);
 }
 
@@ -476,6 +518,7 @@ textarea.field {
 .page-row-key,
 .page-row-book,
 .page-row-author,
+.page-row-thumb,
 .page-row-date {
   color: var(--muted);
   font-size: 0.85rem;
@@ -503,6 +546,50 @@ textarea.field {
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--bg);
+}
+
+/* Thumbnails made from the game's pictures (Upload and Edit). The chosen one is outlined. */
+.thumb-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.thumb-choice {
+  display: grid;
+  place-items: center;
+  width: 120px;
+  aspect-ratio: 4 / 3;
+  padding: 0;
+  overflow: hidden;
+  font: inherit;
+  font-size: 0.8rem;
+  color: var(--muted);
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.thumb-choice img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.thumb-choice:hover {
+  border-color: var(--accent);
+}
+
+.thumb-choice[aria-pressed="true"] {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+.thumb-choice-none {
+  padding: 4px;
+  text-align: center;
 }
 
 .manage-status {
@@ -535,24 +622,20 @@ textarea.field {
     padding: 12px 8px;
   }
 
-  /* Five columns don't fit a phone: the table keeps a minimum width and scrolls sideways
-     inside .table-wrap, so the page itself never scrolls sideways. */
-  .contents-table {
-    min-width: 34rem;
-    font-size: 0.85rem;
+  .filter-bar {
+    padding: 10px;
   }
 
-  .contents-table th,
-  .contents-table td {
-    padding: 6px;
+  .card-grid {
+    gap: 10px;
   }
 
-  /* Header names wrap between words only ("作者 / Author", never "Autho r"). */
-  .contents-table th {
-    overflow-wrap: normal;
+  .card-tile {
+    font-size: 2.5rem;
   }
 
-  .th-name {
-    font-size: 0.8rem;
+  .card-title {
+    padding: 6px 8px;
+    font-size: 0.9rem;
   }
 }

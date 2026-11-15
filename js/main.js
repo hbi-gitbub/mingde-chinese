@@ -1,8 +1,9 @@
 "use strict";
 
 // Main page: shows one game at a time in the iframe, driven by the URL hash.
-// The nav holds the built-in games and a "…" button that opens #contents: a table of the
-// uploaded games with a filter drop-down and a text filter per column. Uploaded games come from
+// The nav holds the built-in games and a "…" button that opens #contents: a grid of thumbnail
+// cards for the uploaded games, under a bar with a filter drop-down and a text filter per field.
+// Uploaded games come from
 // js/uploaded-pages.js (window.MINGDE_UPLOADED_PAGES) and from "pages-changed" events sent
 // by js/manage.js.
 (() => {
@@ -32,6 +33,10 @@
   const VOLUME_MAX = 20;
   const LESSON_MAX = 999;
   const CN_DIGITS = "零一二三四五六七八九";
+  // Thumbnail pictures are pages/uploads/<key>.<thumb>. Without one, a card shows a colored
+  // tile (one of TILE_COUNT colors in css/style.css, picked from the key).
+  const THUMB_EXTS = ["png", "jpg", "webp"];
+  const TILE_COUNT = 6;
   const PUBLISHING_LABEL = "（发布中…）";
   const PUBLISHING_STATUS = "发布中… / Publishing…";
   // Columns with a filter drop-down and a text box. Drop-down: "all" shows every row,
@@ -46,7 +51,7 @@
   const descEl = document.getElementById("page-desc");
   const navCurrent = document.getElementById("nav-current");
   const contentsView = document.getElementById("contents-view");
-  const contentsBody = document.getElementById("contents-body");
+  const contentsGrid = document.getElementById("contents-grid");
   const contentsCount = document.getElementById("contents-count");
   const contentsEmpty = document.getElementById("contents-empty");
   const filtersClear = document.getElementById("filters-clear");
@@ -115,6 +120,8 @@
         volume: cleanText(entry.volume, VOLUME_MAX),
         lesson: cleanLesson(entry.lesson),
         author: cleanText(entry.author, AUTHOR_MAX),
+        thumb: THUMB_EXTS.includes(entry.thumb) ? entry.thumb : "",
+        updated: typeof entry.updated === "string" ? entry.updated : "",
       });
     });
     return result;
@@ -187,7 +194,7 @@
     showPage(DEFAULT_PAGE);
   }
 
-  // ---------- contents table ----------
+  // ---------- contents page (filters + cards) ----------
 
   function normalize(text) {
     return text.trim().toLocaleLowerCase();
@@ -203,7 +210,7 @@
     return row[column];
   }
 
-  // What the table cell and the drop-down show.
+  // What the drop-down shows.
   function columnLabel(value, column) {
     return column === "lesson" && value ? lessonLabel(Number(value)) : value;
   }
@@ -241,31 +248,72 @@
     });
   }
 
-  function cell(text, lang) {
-    const td = document.createElement("td");
-    td.textContent = text;
-    if (lang) td.lang = lang;
-    return td;
+  // The same key always gets the same tile color.
+  function tileIndex(key) {
+    let hash = 0;
+    for (const ch of key) hash = (hash * 31 + ch.charCodeAt(0)) % 9973;
+    return hash % TILE_COUNT;
   }
 
-  // The title links to its game. Hovering shows the description and the HTML file name.
-  function titleCell(row) {
-    const td = cell("", "zh-Hans");
-    const fileName = (pages[row.key] ? pages[row.key].src : "").split("/").pop();
-    if (publishing.has(row.key)) {
-      // Not on the site yet: opening it now would show GitHub's 404 page.
-      const note = document.createElement("span");
-      note.className = "contents-pending";
-      note.textContent = `${row.title}${PUBLISHING_LABEL}`;
-      td.append(note);
-    } else {
-      const link = document.createElement("a");
-      link.href = `#${row.key}`;
-      link.textContent = row.title;
-      link.title = [row.description, `打开 / Open: ${fileName}`].filter(Boolean).join("\n");
-      td.append(link);
+  // Turn the thumbnail box into a colored tile with the title's first character.
+  function showTile(box, row) {
+    box.replaceChildren();
+    box.classList.add("card-tile");
+    box.dataset.tile = String(tileIndex(row.key));
+    box.textContent = [...row.title][0] || "";
+  }
+
+  // The picture, or the tile when there is none (or it can't be loaded yet, e.g. while publishing).
+  function thumbBox(row) {
+    const box = document.createElement("span");
+    box.className = "card-thumb";
+    box.setAttribute("aria-hidden", "true");
+    if (!row.thumb) {
+      showTile(box, row);
+      return box;
     }
-    return td;
+    const img = document.createElement("img");
+    // `updated` changes with every commit, so a replaced picture isn't served from the cache.
+    const version = window.location.protocol === "file:" ? "" : `?v=${encodeURIComponent(row.updated)}`;
+    img.src = `${UPLOAD_DIR}${row.key}.${row.thumb}${version}`;
+    img.alt = "";
+    img.loading = "lazy";
+    img.decoding = "async";
+    img.addEventListener("error", () => showTile(box, row), { once: true });
+    box.append(img);
+    return box;
+  }
+
+  // Hovering a card shows the description, textbook · volume · lesson, author and file name.
+  function cardTooltip(row) {
+    const fileName = (pages[row.key] ? pages[row.key].src : "").split("/").pop();
+    const book = [row.textbook, row.volume, lessonLabel(row.lesson)].filter(Boolean).join(" · ");
+    return [
+      row.description,
+      book,
+      row.author ? `作者：${row.author}` : "",
+      `打开 / Open: ${fileName}`,
+    ]
+      .filter(Boolean)
+      .join("\n");
+  }
+
+  // A card: thumbnail + title, linking to its game. While publishing it isn't a link yet,
+  // because opening it now would show GitHub's 404 page.
+  function card(row) {
+    const li = document.createElement("li");
+    const pending = publishing.has(row.key);
+    const box = document.createElement(pending ? "div" : "a");
+    box.className = pending ? "card card-pending" : "card";
+    if (!pending) box.href = `#${row.key}`;
+    box.title = cardTooltip(row);
+    const title = document.createElement("span");
+    title.className = "card-title";
+    title.lang = "zh-Hans";
+    title.textContent = pending ? `${row.title}${PUBLISHING_LABEL}` : row.title;
+    box.append(thumbBox(row), title);
+    li.append(box);
+    return li;
   }
 
   // Only uploaded games; the built-in ones have their own nav buttons.
@@ -284,19 +332,7 @@
           (!typed[column] || normalize(columnSearchText(row, column)).includes(typed[column])),
       ),
     );
-    contentsBody.replaceChildren(
-      ...shown.map((row) => {
-        const tr = document.createElement("tr");
-        tr.append(
-          titleCell(row),
-          cell(row.textbook, "zh-Hans"),
-          cell(row.volume, "zh-Hans"),
-          cell(lessonLabel(row.lesson), "zh-Hans"),
-          cell(row.author, "zh-Hans"),
-        );
-        return tr;
-      }),
-    );
+    contentsGrid.replaceChildren(...shown.map(card));
     contentsCount.textContent = `显示 ${shown.length} / ${rows.length} 个 · Showing ${shown.length} of ${rows.length}`;
     contentsEmpty.textContent =
       rows.length === 0

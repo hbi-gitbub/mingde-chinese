@@ -4,8 +4,12 @@ A small static website of Chinese learning games. It has no build step and no de
 
 - **中文冒险世界** (`#adventure`): an adventure with six magic levels, plus a teacher mode.
 - **拼音泡泡大作战** (`#bubbles`): a pinyin bubble game with a teacher word-list manager.
-- **目录 / Contents** (`#contents`, the **…** button): a table of the uploaded games (title,
-  教材 / textbook, 册 / volume, 课 / lesson, author). Click a title to open the game; its title then shows next to the **…** button. Each column header has a drop-down to filter the rows, and under it a text box: type part of a value to filter by text (a lesson matches both `3` and 第三课). On a phone the table scrolls sideways inside its box.
+- **目录 / Contents** (`#contents`, the **…** button): a card for each uploaded game, showing its
+  thumbnail picture (or a colored tile with the title's first character) and its title. Hover over a
+  card to see its description, textbook, volume, lesson and author. Click a card to open the game;
+  its title then shows next to the **…** button. Above the cards, each field (title, 教材 / textbook,
+  册 / volume, 课 / lesson, author) has a drop-down and a text box to filter the cards (a lesson
+  matches both `3` and 第三课).
 
 ## Run it
 
@@ -19,7 +23,7 @@ python -m http.server 8000   # then open http://localhost:8000
 ```
 
 You can link straight to a game with `index.html#adventure`, `index.html#bubbles`, or
-`index.html#<key>` for an uploaded game, and to the table with `index.html#contents`.
+`index.html#<key>` for an uploaded game, and to the contents page with `index.html#contents`.
 
 ## Add, change or remove games (⚙ 管理)
 
@@ -41,18 +45,25 @@ this GitHub repo, and GitHub Pages publishes it for every visitor about **1–2 
 - **Upload:** choose an `.html` file (at most 50 MB). Enter a **key**: a–z, 0–9 and `-`. It is
   used in the link `#key` and in the file name, and can't be changed later. Enter a **title**,
   an optional **description**, and optionally the **教材 / textbook** (e.g. 人教语文), the
-  **册 / volume** (e.g. 二年级上册), the **课 / lesson** as a number (3 is shown as 第三课) and the **author**.
+  **册 / volume** (e.g. 二年级上册), the **课 / lesson** as a number (3 is shown as 第三课), the **author** and a **缩略图 / thumbnail
+  picture** (PNG, JPG or WebP, at most 1 MB; a 4:3 landscape picture fits best).
+  You usually don't need your own picture: after you choose the game file, the site makes
+  thumbnails from the pictures inside the game and shows them under the form. The first one is
+  already chosen; click another one or **No picture** to change it. A picture file you choose
+  yourself is used instead.
   The form starts filled in with example values (key `rj-2a-3-adventure`, title 中文冒险世界,
   description 六大魔法关卡，闯关学中文, textbook 人教语文, volume 二年级上册, lesson 3, author 王老师). Change them as
   needed, or press **Clear** to empty every field. Choosing a file replaces the example key with the file name, unless you
   typed your own key. The **Upload** button works only once a token is set and the file, key
-  and title are filled in; hover over it to see what's missing. Uploaded games appear in the contents table (**…**), not as their own
-  button. The table shows the textbook, volume and lesson, not the description. Hover over a title to see its description.
-  While the game opens, the line under the buttons shows "description · 作者：author". Its title in
-  the table shows "（发布中…）" until the page is live.
-- **Edit:** change the title, description, textbook, volume, lesson or author. The file isn't uploaded again.
-- **Replace:** upload a new version of the file under the same key.
-- **Delete:** removes the page and its button.
+  and title are filled in; hover over it to see what's missing. Uploaded games appear as cards on the contents page (**…**), not as
+  their own button. While the game opens, the line under the buttons shows "description · 作者：author".
+  Its card shows "（发布中…）" until the page is live.
+- **Edit:** change the title, description, textbook, volume, lesson or author, choose a new
+  picture, press **从游戏生成 / From the game** to make thumbnails from the game (it loads the game
+  from the website), or tick **Remove the picture**. The game file isn't uploaded again.
+- **Replace:** upload a new version of the file under the same key. If the game already has a
+  picture, **Keep current** is chosen; click a thumbnail to use it instead.
+- **Delete:** removes the game and its picture.
 - The built-in games (中文冒险世界, 拼音泡泡大作战) can't be changed here.
 
 **Limits**
@@ -70,14 +81,14 @@ before you start and again before you push.
 
 ```
 index.html                  main page: header (⚙ 管理), nav (2 games + … + open game's title), description line, iframe,
-                            contents table, Manage dialog
+                            contents page (filters + cards), Manage dialog
 css/style.css               main page styles (light + dark)
-js/main.js                  switches games via the URL hash; builds the contents table and its filters
+js/main.js                  switches games via the URL hash; builds the contents cards and their filters
 js/manage.js                ⚙ 管理: upload / replace / edit / delete through the GitHub API
 js/uploaded-pages.js        list of uploaded games (written by the site; don't hand-edit)
 pages/adventure-world.html  中文冒险世界 (self-contained, ~19 MB)
 pages/pinyin-bubbles.html   拼音泡泡大作战 (self-contained, ~6 MB)
-pages/uploads/              games uploaded from the site
+pages/uploads/              games uploaded from the site (<key>.html) and their pictures (<key>.png/.jpg/.webp)
 ```
 
 ## Teacher data

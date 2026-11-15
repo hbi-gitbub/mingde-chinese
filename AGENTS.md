@@ -6,8 +6,8 @@ Rules for any AI coding agent (Codex, Cursor, Copilot, Claude, and others) worki
 明德中文乐园 (Mingde Chinese) is a small static website of Chinese learning games. A main page
 (`index.html`) shows one game at a time inside an iframe: 中文冒险世界 (an adventure with six
 levels) and 拼音泡泡大作战 (a pinyin bubble game with a teacher word-list manager). The nav
-shows only these two plus a "…" button that opens the contents page (`#contents`): a table of
-the uploaded games with a filter drop-down and a text filter per column. A teacher
+shows only these two plus a "…" button that opens the contents page (`#contents`): a grid of
+thumbnail cards for the uploaded games, under a filter drop-down and a text filter per field. A teacher
 can also upload, replace, edit and delete more game pages from the site itself (⚙ 管理). Those
 changes are committed to this GitHub repo through the GitHub API. It uses plain HTML, CSS and
 JavaScript, with no build step and no framework.
@@ -15,14 +15,15 @@ JavaScript, with no build step and no framework.
 ## 2. File structure
 ```
 index.html                main page: header (title, status, ⚙ 管理), nav (2 games + "…" + open game's title), description line,
-                          iframe, contents table (#contents), Manage dialog
-css/style.css             styles for the shell, the contents table and the dialog (light + dark tokens on :root)
-js/main.js                main page logic: page map, hash routing, iframe swap, contents table + filters
+                          iframe, contents page (#contents: filter bar + card grid), Manage dialog
+css/style.css             styles for the shell, the contents page and the dialog (light + dark tokens on :root)
+js/main.js                main page logic: page map, hash routing, iframe swap, contents cards + filters
 js/manage.js              ⚙ 管理 dialog: GitHub token, upload / replace / edit / delete via the GitHub API
 js/uploaded-pages.js      list of uploaded pages (window.MINGDE_UPLOADED_PAGES), written by manage.js
 pages/adventure-world.html  vendored game: 中文冒险世界 · 六大魔法关卡 (~19 MB, self-contained)
 pages/pinyin-bubbles.html   vendored game: 拼音泡泡大作战 (~6 MB, self-contained)
 pages/uploads/<key>.html  games uploaded from the site (committed by manage.js; .gitkeep keeps the folder)
+pages/uploads/<key>.png   optional thumbnail picture of that game (.png, .jpg or .webp), also committed by manage.js
 README.md                 how to run the site and manage pages
 AGENTS.md                 this file
 CLAUDE.md                 Claude Code notes (points here)
@@ -49,21 +50,27 @@ CLAUDE.md                 Claude Code notes (points here)
   shown in `#page-desc` under the nav, as "description · 作者：author".
 - **Nav and contents page:** the nav has only the built-in game buttons and the "…" button
   (`data-page="contents"`). Uploaded games get no nav button. `#contents` hides the iframe
-  (emptied, so game sound stops) and shows `#contents-view`: a table, built by `main.js`, with
-  the columns Title, 教材/Textbook, 册/Volume, 课/Lesson and Author (the description is not a column; it shows in the
-  title's tooltip and in `#page-desc`). It lists only the uploaded games (the built-in
-  ones have their own nav buttons); with none, it says "还没有上传的游戏". The header row holds, for each column, a `<select data-filter="…">` with
-  "全部 / All" plus every value in that column, and under it an
-  `<input type="search" data-filter-text="…">`. A row is shown only when, in every column, it
-  matches the chosen drop-down value and its value contains the typed text (case-insensitive). Each title
-  is a link (`href="#<key>"`, the HTML file name as its tooltip). While a game is still
-  publishing, its title is plain text followed by "（发布中…）". The "…" button is marked active on
+  (emptied, so game sound stops) and shows `#contents-view`: a filter bar and a grid of cards
+  (`#contents-grid`), both built by `main.js`. It lists only the uploaded games (the built-in
+  ones have their own nav buttons); with none, it says "还没有上传的游戏".
+  - Filter bar: for each field (Title, 教材/Textbook, 册/Volume, 课/Lesson, Author) a
+    `<select data-filter="…">` with "全部 / All" plus every value of that field, and under it an
+    `<input type="search" data-filter-text="…">`. A card is shown only when, for every field, it
+    matches the chosen drop-down value and its value contains the typed text (case-insensitive).
+  - Card: a link (`href="#<key>"`) with a 4:3 thumbnail and the title under it, nothing else. Its
+    tooltip holds the description, "textbook · volume · lesson", "作者：author" and the HTML file
+    name. The thumbnail is `pages/uploads/<key>.<thumb>?v=<updated>` (no `?v` under `file://`).
+    Without a picture, or if it fails to load, it is a colored tile with the title's first
+    character; the color (`--tile-0` … `--tile-5`) is picked from the key. While a game is still
+    publishing, its card is not a link and its title is followed by "（发布中…）". The "…" button is marked active on
   `#contents` and on uploaded games. While an uploaded game is open, its title is shown right after
   "…" in the nav (`#nav-current`, a plain label, not a button). `contents` is a reserved key.
 - **Uploaded pages (⚙ 管理):**
-  - Files live at `pages/uploads/<key>.html`. The list lives in `js/uploaded-pages.js` as
-    `window.MINGDE_UPLOADED_PAGES = [{ key, title, description, textbook, volume, lesson, author, updated }]`. There is no
-    path field: the path is always built from the key. Key `^[a-z0-9][a-z0-9-]{0,39}$`, not a
+  - Files live at `pages/uploads/<key>.html`, plus an optional picture `pages/uploads/<key>.<thumb>`.
+    The list lives in `js/uploaded-pages.js` as
+    `window.MINGDE_UPLOADED_PAGES = [{ key, title, description, textbook, volume, lesson, author, thumb, updated }]`.
+    There is no path field: the paths are always built from the key. `thumb` is the picture's
+    extension (`"png"`, `"jpg"` or `"webp"`), or `""` (also when missing) for no picture. Key `^[a-z0-9][a-z0-9-]{0,39}$`, not a
     built-in key, not `contents` and not `manage`. Title 1–40 characters. Description 0–200 characters.
     Textbook (教材, e.g. 人教语文) 0–40 characters. Volume (册, e.g. 二年级上册) 0–20 characters.
     Lesson (课) a whole number 1–999, or `null` when empty; it is shown as 第三课 (Chinese numerals
@@ -74,11 +81,14 @@ CLAUDE.md                 Claude Code notes (points here)
   - The list is a script, not JSON, so it also loads from `file://`. `manage.js` writes it in
     an exact format (`serializeList` / `parseList`), so don't hand-edit its layout.
   - `js/manage.js` commits through the GitHub Git Data API (blob → tree → commit → update ref).
-    Each upload, replace, edit or delete is **one commit** that contains both the page file and
-    the list. On 422 (`main` moved) it retries once. Owner, repo and branch are constants at the
+    Each upload, replace, edit or delete is **one commit** that contains the page file, the
+    picture (if one changes) and the list. Upload/Replace and Edit take an optional new picture;
+    leaving it empty keeps the current one. Edit can also remove it. When the extension changes or
+    the picture is removed, the old file is deleted in the same commit; Delete removes the page and
+    its picture. On 422 (`main` moved) it retries once. Owner, repo and branch are constants at the
     top of `manage.js`.
   - After a commit it checks the live site's `js/uploaded-pages.js?t=…` every 10 s, for up to
-    5 min, until it matches. Meanwhile, the game's title in the contents table shows "（发布中…）"
+    5 min, until it matches. Meanwhile, the game's card on the contents page shows "（发布中…）"
     and isn't a link.
   - `manage.js` and `main.js` talk only through the DOM event
     `document.dispatchEvent(new CustomEvent("pages-changed", { detail: { pages, publishing, status } }))`.
@@ -86,6 +96,19 @@ CLAUDE.md                 Claude Code notes (points here)
     ~10 min cache.
   - User text (titles, descriptions, textbooks, volumes, authors) is only ever shown with `textContent` or attributes,
     never with `innerHTML`.
+  - Picture limits: `.png`, `.jpg`/`.jpeg` (saved as `jpg`) or `.webp`, not empty, at most
+    `THUMB_MAX_MB` (1).
+  - Thumbnails from the game: the game's HTML is searched **as text** (its scripts never run) for
+    embedded `data:image/png|jpeg|webp|gif;base64,…` pictures (also with `\/` from JS/JSON strings).
+    Small ones (icons) are skipped and duplicates dropped. The biggest, up to `THUMB_CHOICES_MAX` (6),
+    are cropped to 4:3 on a canvas (tall: keep the top; wide: keep the middle), scaled to 640×480
+    and saved as WebP (JPEG where the browser can't write WebP). They show as buttons under the
+    form (`#upload-thumb-pick` / `#edit-thumb-pick`), plus a last "No picture" / "Keep current".
+    - Upload: runs when a game file is chosen. The first thumbnail is preselected, except when
+      replacing a game that already has a picture (then "Keep current").
+    - Edit: "从游戏生成 / From the game" loads `pages/uploads/<key>.html` from the live site.
+    - Which picture is saved: a picture file chosen by hand, then (Edit) "Remove the picture",
+      then the chosen thumbnail; with none of them the current picture is kept.
   - Upload limits: `.html`/`.htm`, not empty, at most `MAX_UPLOAD_MB` (50). The file must be
     self-contained: linked images or scripts are not uploaded.
 - **GitHub token:**
@@ -109,8 +132,8 @@ CLAUDE.md                 Claude Code notes (points here)
   (the page's own origin over http, or `"null"` / `"file://"` under `file://`). The two games
   don't send any, so the header status line stays empty for them.
 - **file:// compatible:** no `fetch()` of local files, no ES modules (`type="module"`),
-  no `import`/`export`. `fetch()` is used only for `api.github.com` and for the live-site check
-  in `manage.js`.
+  no `import`/`export`. `fetch()` is used only in `manage.js`: for `api.github.com`, for the
+  live-site check, and for Edit → "From the game" (the game's HTML from the live site).
 - **The site commits to `main`:** every change made in ⚙ 管理 is a new commit on GitHub. Before
   you work locally, run `git pull`, and pull again before you push.
 - **No build step, no npm dependencies, no external CDNs.**
@@ -132,8 +155,8 @@ To add a new **built-in** page (fixed, can't be deleted from the site):
 3. In `index.html`, add `<button type="button" class="nav-btn" data-page="story" data-builtin>…</button>`
    before the "…" button (`data-page="contents"`).
 4. In `js/main.js`, add `story: { src: "pages/<file>.html", title: "…", description: "…" }` to
-   `BUILTIN_PAGES` (optionally also `author: "…"`). Built-in games are not listed in the
-   contents table.
+   `BUILTIN_PAGES` (optionally also `author: "…"`). Built-in games are not listed on the
+   contents page.
 5. Update the file lists in `README.md` and in section 2 of this file.
 
 ## 7. Testing
@@ -146,20 +169,30 @@ To add a new **built-in** page (fixed, can't be deleted from the site):
 - Check a 375px-wide viewport (DevTools device mode): the nav wraps and there's no horizontal scroll.
   The header stays on one row with ⚙ 管理 at the right end. The open dialog fits the screen.
 - Each game shows its description under the nav, followed by "· 作者：…" when it has an author.
-- "…" opens `#contents`: the table lists every uploaded game and no built-in one, with the columns
+- "…" opens `#contents`: a card for every uploaded game and none for the built-in ones, each with
+  a thumbnail (the picture, or a colored tile with the title's first character) and only the title.
+  Hovering a card shows its description, textbook · volume · lesson and author. The filter bar has
   Title, 教材/Textbook, 册/Volume, 课/Lesson and Author. Lessons show as 第三课 and sort by number in
-  their drop-down; typing `3` or 三 in the lesson box finds lesson 3. Hovering a title shows its description. Each filter drop-down narrows the rows, and
-  so does typing part of a value in the text box under it (rows narrow as you type; both together
-  must match). "Clear filters" resets the drop-downs, empties the boxes and shows all again, and clicking a title opens its game (with "…" still highlighted for
-  uploaded games, and the game's title right after "…"; the title disappears on `#contents` and the
-  built-in games). At 375px the table scrolls sideways inside its own box (minimum width 34rem), with no page-wide
-  horizontal scroll.
+  their drop-down; typing `3` or 三 in the lesson box finds lesson 3. Each filter drop-down narrows
+  the cards, and so does typing part of a value in the text box under it (cards narrow as you type;
+  both together must match). "Clear filters" resets the drop-downs, empties the boxes and shows all
+  again, and clicking a card opens its game (with "…" still highlighted for uploaded games, and the
+  game's title right after "…"; the title disappears on `#contents` and the built-in games). At
+  375px the filters and the cards are 2 per row, with no horizontal scroll.
+- Pictures: upload a game with a picture and its card shows it; Replace without choosing a picture
+  keeps it; Edit with a new `.jpg` replaces a `.png` (the old file is gone in that commit); Edit →
+  "Remove the picture" brings back the tile; Delete removes both files. A `.gif` or a picture over
+  1 MB is refused.
+- Thumbnails from the game: choosing `rj-2a-3-adventure.html` in Upload shows one thumbnail (the top
+  of its title map) and "No picture"; the thumbnail is preselected and clicking switches the outline.
+  A game without embedded pictures says none was found. Edit → "From the game" does the same from
+  the live site (from `file://` too). Choosing a picture file by hand wins over the thumbnail.
 - ⚙ 管理 without a token: the list is visible, Upload is disabled, and Edit or Delete asks for a token.
   With a token, Upload stays disabled until a file is chosen and Key and Title are filled
   (its tooltip says what's missing); clearing any of them disables it again. Clear empties
   every Upload field (it doesn't bring back the example values).
 - Test uploads with a throwaway key (e.g. `test`) on the live site. Each action makes one commit.
-  Its title in the contents table shows "（发布中…）" until it is live. Delete it again afterwards, and `git pull`.
+  Its card on the contents page shows "（发布中…）" until it is live. Delete it again afterwards, and `git pull`.
 
 ## 8. Don'ts
 - No frameworks (React, Vue, …), bundlers (Vite, webpack, …), or transpilers.

@@ -36,48 +36,35 @@
         <p id="contents-count" class="hint" role="status" aria-live="polite"></p>
         <button type="button" id="filters-clear" class="btn btn-small"><span lang="zh-Hans">清除筛选</span> / Clear filters</button>
       </div>
-      <div class="table-wrap">
-        <table class="contents-table">
-          <colgroup>
-            <col class="col-title">
-            <col class="col-textbook">
-            <col class="col-volume">
-            <col class="col-lesson">
-            <col class="col-author">
-          </colgroup>
-          <thead>
-            <tr>
-              <th scope="col">
-                <span class="th-name"><span lang="zh-Hans">标题</span> / Title</span>
-                <select class="filter" data-filter="title" aria-label="按标题筛选 / Filter by title"></select>
-                <input type="search" class="filter filter-text" data-filter-text="title" placeholder="输入筛选… / Type to filter…" autocomplete="off" aria-label="输入标题筛选 / Type to filter by title">
-              </th>
-              <th scope="col">
-                <span class="th-name"><span lang="zh-Hans">教材</span> / Textbook</span>
-                <select class="filter" data-filter="textbook" aria-label="按教材筛选 / Filter by textbook"></select>
-                <input type="search" class="filter filter-text" data-filter-text="textbook" placeholder="输入筛选… / Type to filter…" autocomplete="off" aria-label="输入教材筛选 / Type to filter by textbook">
-              </th>
-              <th scope="col">
-                <span class="th-name"><span lang="zh-Hans">册</span> / Volume</span>
-                <select class="filter" data-filter="volume" aria-label="按册筛选 / Filter by volume"></select>
-                <input type="search" class="filter filter-text" data-filter-text="volume" placeholder="输入筛选… / Type to filter…" autocomplete="off" aria-label="输入册筛选 / Type to filter by volume">
-              </th>
-              <th scope="col">
-                <span class="th-name"><span lang="zh-Hans">课</span> / Lesson</span>
-                <select class="filter" data-filter="lesson" aria-label="按课筛选 / Filter by lesson"></select>
-                <input type="search" class="filter filter-text" data-filter-text="lesson" placeholder="输入筛选… / Type to filter…" autocomplete="off" aria-label="输入课筛选 / Type to filter by lesson">
-              </th>
-              <th scope="col">
-                <span class="th-name"><span lang="zh-Hans">作者</span> / Author</span>
-                <select class="filter" data-filter="author" aria-label="按作者筛选 / Filter by author"></select>
-                <input type="search" class="filter filter-text" data-filter-text="author" placeholder="输入筛选… / Type to filter…" autocomplete="off" aria-label="输入作者筛选 / Type to filter by author">
-              </th>
-            </tr>
-          </thead>
-          <tbody id="contents-body"></tbody>
-        </table>
-        <p id="contents-empty" class="contents-empty" hidden></p>
+      <div class="filter-bar" role="group" aria-label="筛选 / Filters">
+        <div class="filter-group">
+          <label class="filter-name" for="filter-title"><span lang="zh-Hans">标题</span> / Title</label>
+          <select id="filter-title" class="filter" data-filter="title"></select>
+          <input type="search" class="filter filter-text" data-filter-text="title" placeholder="输入筛选… / Type to filter…" autocomplete="off" aria-label="输入标题筛选 / Type to filter by title">
+        </div>
+        <div class="filter-group">
+          <label class="filter-name" for="filter-textbook"><span lang="zh-Hans">教材</span> / Textbook</label>
+          <select id="filter-textbook" class="filter" data-filter="textbook"></select>
+          <input type="search" class="filter filter-text" data-filter-text="textbook" placeholder="输入筛选… / Type to filter…" autocomplete="off" aria-label="输入教材筛选 / Type to filter by textbook">
+        </div>
+        <div class="filter-group">
+          <label class="filter-name" for="filter-volume"><span lang="zh-Hans">册</span> / Volume</label>
+          <select id="filter-volume" class="filter" data-filter="volume"></select>
+          <input type="search" class="filter filter-text" data-filter-text="volume" placeholder="输入筛选… / Type to filter…" autocomplete="off" aria-label="输入册筛选 / Type to filter by volume">
+        </div>
+        <div class="filter-group">
+          <label class="filter-name" for="filter-lesson"><span lang="zh-Hans">课</span> / Lesson</label>
+          <select id="filter-lesson" class="filter" data-filter="lesson"></select>
+          <input type="search" class="filter filter-text" data-filter-text="lesson" placeholder="输入筛选… / Type to filter…" autocomplete="off" aria-label="输入课筛选 / Type to filter by lesson">
+        </div>
+        <div class="filter-group">
+          <label class="filter-name" for="filter-author"><span lang="zh-Hans">作者</span> / Author</label>
+          <select id="filter-author" class="filter" data-filter="author"></select>
+          <input type="search" class="filter filter-text" data-filter-text="author" placeholder="输入筛选… / Type to filter…" autocomplete="off" aria-label="输入作者筛选 / Type to filter by author">
+        </div>
       </div>
+      <ul id="contents-grid" class="card-grid" aria-label="游戏 / Games"></ul>
+      <p id="contents-empty" class="contents-empty" hidden></p>
     </section>
   </main>
 
@@ -149,6 +136,18 @@
         <label class="field-label" for="upload-author"><span lang="zh-Hans">作者</span> / Author (optional)</label>
         <input type="text" id="upload-author" class="field" maxlength="40" lang="zh-Hans" value="王老师">
 
+        <label class="field-label" for="upload-thumb"><span lang="zh-Hans">缩略图</span> / Thumbnail picture (optional)</label>
+        <input type="file" id="upload-thumb" class="field" accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp"
+          aria-describedby="upload-thumb-hint">
+        <p id="upload-thumb-hint" class="hint">PNG / JPG / WebP, max 1 MB, 4:3 <span lang="zh-Hans">横图最好</span> ·
+          <span lang="zh-Hans">选好游戏文件后，会用游戏里的图片自动生成缩略图供选择；没有图片时显示彩色方块</span>
+          (after you choose the game file, thumbnails are made from its pictures for you to pick from;
+          without a picture the card shows a colored tile)</p>
+        <div id="upload-thumb-pick" class="thumb-pick" hidden>
+          <p id="upload-thumb-pick-note" class="hint" role="status" aria-live="polite"></p>
+          <div id="upload-thumb-choices" class="thumb-choices" role="group" aria-label="从游戏生成的缩略图 / Thumbnails from the game"></div>
+        </div>
+
         <div class="form-actions">
           <button type="submit" class="btn btn-primary"><span lang="zh-Hans">上传</span> / Upload</button>
           <button type="reset" class="btn"><span lang="zh-Hans">清空</span> / Clear</button>
@@ -175,6 +174,23 @@
         <input type="number" id="edit-lesson" class="field" min="1" max="999" step="1" inputmode="numeric">
         <label class="field-label" for="edit-author"><span lang="zh-Hans">作者</span> / Author (optional)</label>
         <input type="text" id="edit-author" class="field" maxlength="40" lang="zh-Hans">
+        <label class="field-label" for="edit-thumb"><span lang="zh-Hans">新缩略图</span> / New thumbnail picture (optional)</label>
+        <input type="file" id="edit-thumb" class="field" accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp"
+          aria-describedby="edit-thumb-hint">
+        <p id="edit-thumb-hint" class="hint">PNG / JPG / WebP, max 1 MB · <span lang="zh-Hans">留空则保留原图片</span>
+          (leave empty to keep the current picture)</p>
+        <div class="field-row">
+          <button type="button" id="edit-thumb-from-game" class="btn btn-small"
+            title="用游戏里的图片生成缩略图（从网站读取游戏）/ Make thumbnails from the game's pictures (loads the game from the site)"><span lang="zh-Hans">从游戏生成</span> / From the game</button>
+        </div>
+        <div id="edit-thumb-pick" class="thumb-pick" hidden>
+          <p id="edit-thumb-pick-note" class="hint" role="status" aria-live="polite"></p>
+          <div id="edit-thumb-choices" class="thumb-choices" role="group" aria-label="从游戏生成的缩略图 / Thumbnails from the game"></div>
+        </div>
+        <label class="check" id="edit-thumb-remove-row">
+          <input type="checkbox" id="edit-thumb-remove">
+          <span><span lang="zh-Hans">删除图片</span> / Remove the picture</span>
+        </label>
         <div class="form-actions">
           <button type="submit" class="btn btn-primary"><span lang="zh-Hans">保存</span> / Save</button>
           <button type="button" id="edit-cancel" class="btn"><span lang="zh-Hans">取消</span> / Cancel</button>
