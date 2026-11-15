@@ -20,7 +20,7 @@ window.MINGDE_UPLOADED_PAGES = [
     "volume": "二年级上册",
     "lesson": 4,
     "author": "邹老师",
-    "thumb": "webp",
-    "updated": "2026-11-15T11:54:10Z"
+    "thumb": "",
+    "updated": "2026-11-15T11:56:19Z"
   }
 ];
